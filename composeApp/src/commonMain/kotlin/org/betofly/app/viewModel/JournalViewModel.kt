@@ -62,6 +62,38 @@ class JournalViewModel(
         }
     }
 
+    fun loadTripsOnly() = viewModelScope.launch {
+        _uiState.value = JournalUiState.Loading
+        try {
+            val trips = tripRepository.getAllTrips()
+
+            if (trips.isEmpty()) {
+                _uiState.value = JournalUiState.Empty
+            } else {
+                val tripEntries = trips.map { trip ->
+                    EntryModel(
+                        id = trip.id,
+                        tripId = trip.id,
+                        type = EntryType.TRIP,
+                        title = trip.title,
+                        text = trip.description,
+                        timestamp = trip.createdAt,
+                        tags = trip.tags,
+                        mediaIds = emptyList(),
+                        coords = null,
+                        createdAt = trip.createdAt,
+                        updatedAt = trip.updatedAt
+                    )
+                }
+
+                _uiState.value = JournalUiState.Success(tripEntries.groupBy { it.timestamp.date })
+            }
+        } catch (e: Exception) {
+            _uiState.value = JournalUiState.Error(e.message ?: "Failed to load trips")
+        }
+    }
+
+
     fun deleteEntry(entryId: Long) = viewModelScope.launch {
         try {
             entryRepository.deleteEntry(entryId)

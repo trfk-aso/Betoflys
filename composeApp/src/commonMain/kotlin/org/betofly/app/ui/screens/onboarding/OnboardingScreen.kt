@@ -47,7 +47,7 @@ fun OnboardingScreen(navController: NavHostController) {
         HorizontalPager(state = pagerState) { page ->
             Image(
                 painter = painterResource(pages[page]),
-                contentDescription = "Onboarding Slide ${page + 1}",
+                contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
             )

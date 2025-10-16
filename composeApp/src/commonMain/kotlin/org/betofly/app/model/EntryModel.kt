@@ -19,5 +19,5 @@ data class EntryModel(
 )
 
 enum class EntryType {
-    PHOTO, NOTE, PLACE, ROUTE_POINT
+    PHOTO, NOTE, PLACE, ROUTE_POINT, TRIP
 }
