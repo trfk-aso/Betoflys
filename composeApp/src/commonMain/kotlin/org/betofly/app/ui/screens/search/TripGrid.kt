@@ -51,8 +51,15 @@ fun TripGrid(
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         items(trips) { tripUi ->
+            // создаем копию TripUiModel с обрезанными тегами
+            val trimmedTrip = tripUi.copy(
+                trip = tripUi.trip.copy(
+                    tags = tripUi.trip.tags.take(2) // максимум 2 тега
+                )
+            )
+
             TripCard(
-                tripUi = tripUi,
+                tripUi = trimmedTrip,
                 currentThemeId = currentThemeId,
                 onClick = { onClick(tripUi) },
                 onEdit = { onEdit(tripUi) },

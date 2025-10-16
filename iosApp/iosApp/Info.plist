@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="2.0">
+<plist version="1.0">
 <dict>
     <key>CFBundleShortVersionString</key>
     <string>2.0</string>
@@ -8,10 +8,24 @@
     <key>CFBundleVersion</key>
     <string>2</string>
 
+    <key>CFBundleIdentifier</key>
+    <string>com.betoflys.app</string>
+
+    <key>CFBundleName</key>
+    <string>ZoneLepro</string>
+
+    <key>UILaunchStoryboardName</key>
+    <string>LaunchScreen</string>
+
+    <key>UIMainStoryboardFile</key>
+    <string>Main</string>
+
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+    </array>
+
     <key>CADisableMinimumFrameDurationOnPhone</key>
     <true/>
 </dict>
 </plist>
-
-
-
