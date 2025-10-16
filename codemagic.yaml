@@ -37,29 +37,41 @@ workflows:
       - name: Increment build number
         script: |
           cd $CM_BUILD_DIR/iosApp
-          BUILD_NUMBER=$(($(app-store-connect get-latest-testflight-build-number "$APP_ID") + 1))
-          echo "✅ New build number: $BUILD_NUMBER"
-
           PLIST_PATH="$CM_BUILD_DIR/iosApp/iosApp/Info.plist"
 
-          echo "📄 Updating Info.plist at: $PLIST_PATH"
+          echo "📄 Info.plist path: $PLIST_PATH"
 
-          # Убедимся, что файл существует
+          # Проверяем, существует ли файл Info.plist
           if [ ! -f "$PLIST_PATH" ]; then
-            echo "❌ Error: Info.plist not found at $PLIST_PATH"
+            echo "❌ Error: Info.plist not found!"
+            find $CM_BUILD_DIR -name "Info.plist"
             exit 1
           fi
 
-          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" "$PLIST_PATH"
+          # Получаем последний билд из TestFlight
+          LAST_BUILD_NUMBER=$(app-store-connect get-latest-testflight-build-number "$APP_ID" || echo 1)
+          BUILD_NUMBER=$((LAST_BUILD_NUMBER + 1))
 
-          # Если CFBundleShortVersionString отсутствует — добавим
+          echo "🔢 Last build number: $LAST_BUILD_NUMBER"
+          echo "✅ New build number: $BUILD_NUMBER"
+
+          # Обновляем CFBundleVersion
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" "$PLIST_PATH" 2>/dev/null || \
+          /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string $BUILD_NUMBER" "$PLIST_PATH"
+
+          # Обновляем CFBundleShortVersionString (если отсутствует — добавим)
           SHORT_VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$PLIST_PATH" 2>/dev/null || echo "")
           if [ -z "$SHORT_VERSION" ]; then
             echo "ℹ️ CFBundleShortVersionString not found, setting default to 2.0"
             /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string 2.0" "$PLIST_PATH"
+          else
+            /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 2.0" "$PLIST_PATH"
           fi
 
-          echo "✅ Info.plist updated successfully"
+          echo "✅ Info.plist updated successfully!"
+          echo "---------------------------"
+          cat "$PLIST_PATH"
+          echo "---------------------------"
 
       - name: Build KMP shared framework
         script: |
@@ -71,9 +83,9 @@ workflows:
           export TARGET_BUILD_DIR="$CM_BUILD_DIR/iosApp/build/Release-iphoneos"
           export FRAMEWORKS_FOLDER_PATH="$TARGET_BUILD_DIR/ComposeApp.framework"
           export BUILT_PRODUCTS_DIR="$TARGET_BUILD_DIR"
-          
+
           mkdir -p "$TARGET_BUILD_DIR"
-          
+
           ./gradlew :composeApp:embedAndSignAppleFrameworkForXcode -x syncComposeResourcesForIos
 
       - name: Build iOS
@@ -90,4 +102,5 @@ workflows:
       app_store_connect:
         auth: integration
         submit_to_app_store: true
+
 
