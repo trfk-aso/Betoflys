@@ -44,6 +44,7 @@ import betofly.composeapp.generated.resources.ic_back_blue
 import betofly.composeapp.generated.resources.ic_back_dark
 import betofly.composeapp.generated.resources.ic_back_gold
 import betofly.composeapp.generated.resources.ic_back_light
+import betofly.composeapp.generated.resources.ic_title
 import betofly.composeapp.generated.resources.logo_betofly
 import betofly.composeapp.generated.resources.onboarding_slide1
 import org.betofly.app.repository.ThemeRepository
@@ -149,7 +150,7 @@ fun AboutScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Image(
-                    painter = painterResource(Res.drawable.logo_betofly),
+                    painter = painterResource(Res.drawable.ic_title),
                     contentDescription = "Logo",
                     modifier = Modifier.size(150.dp)
                 )
@@ -161,8 +162,8 @@ fun AboutScreen(
                 Spacer(Modifier.height(16.dp))
 
                 Text(
-                    "Betofly is a privacy-focused app that prioritizes user autonomy. Without cloud storage, accounts, or push notifications, it operates solely on your device, ensuring your data remains private. Use this offline assistant to record and analyze without interference; you are the hero of your own data journey. It's like an old RPG: You are both the hero and chronicler of your own story.\n" +
-                            "Betofly is not just an app; it's your offline companion that doesn't require Wi-Fi.",
+                    "ZoneLepro is a privacy-focused app that prioritizes user autonomy. Without cloud storage, accounts, or push notifications, it operates solely on your device, ensuring your data remains private. Use this offline assistant to record and analyze without interference; you are the hero of your own data journey. It's like an old RPG: You are both the hero and chronicler of your own story.\n" +
+                            "ZoneLepro is not just an app; it's your offline companion that doesn't require Wi-Fi.",
                     fontSize = 16.sp,
                     color = Color.White,
                     textAlign = TextAlign.Center,
