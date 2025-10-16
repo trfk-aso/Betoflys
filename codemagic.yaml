@@ -1,10 +1,11 @@
 workflows:
   ios-workflow:
-    name: iOS Build
+    name: iOS Build & Publish
     max_build_duration: 120
     instance_type: mac_mini_m1
     integrations:
       app_store_connect: ZoneLepro
+
     environment:
       java: 17
       groups:
@@ -14,6 +15,7 @@ workflows:
         XCODE_PROJECT: "iosApp.xcodeproj"
         XCODE_SCHEME: "iosApp"
         APP_ID: 6753973822
+
     scripts:
       - name: Set up keychain
         script: |
@@ -27,7 +29,7 @@ workflows:
         script: |
           keychain add-certificates
 
-      - name: Set up code signing settings
+      - name: Set up code signing
         script: |
           cd $CM_BUILD_DIR/iosApp
           xcode-project use-profiles
@@ -35,9 +37,18 @@ workflows:
       - name: Increment build number
         script: |
           cd $CM_BUILD_DIR/iosApp
+          echo "Fetching latest build number from TestFlight..."
           BUILD_NUMBER=$(($(app-store-connect get-latest-testflight-build-number "$APP_ID") + 1))
-          echo "New build number: $BUILD_NUMBER"
-          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" "$XCODE_PROJECT/../iosApp/Info.plist"
+          echo "✅ New build number: $BUILD_NUMBER"
+
+          # Обновляем CFBundleVersion
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" "Info.plist"
+          
+          # Опционально увеличим и CFBundleShortVersionString при каждом мажорном релизе
+          CURRENT_VERSION=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "Info.plist")
+          echo "Current short version: $CURRENT_VERSION"
+          
+          /usr/libexec/PlistBuddy -c "Print CFBundleVersion" "Info.plist"
 
       - name: Build KMP shared framework
         script: |
@@ -49,15 +60,22 @@ workflows:
           export TARGET_BUILD_DIR="$CM_BUILD_DIR/iosApp/build/Release-iphoneos"
           export FRAMEWORKS_FOLDER_PATH="$TARGET_BUILD_DIR/ComposeApp.framework"
           export BUILT_PRODUCTS_DIR="$TARGET_BUILD_DIR"
-          
+
           mkdir -p "$TARGET_BUILD_DIR"
           
           ./gradlew :composeApp:embedAndSignAppleFrameworkForXcode -x syncComposeResourcesForIos
 
-      - name: Build iOS
+      - name: Build iOS .ipa
         script: |
           cd $CM_BUILD_DIR/iosApp
+          echo "Building iOS project..."
           xcode-project build-ipa --project "$XCODE_PROJECT" --scheme "$XCODE_SCHEME"
+
+      - name: Debug Info.plist values
+        script: |
+          echo "Verifying Info.plist values:"
+          /usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" iosApp/Info.plist || true
+          /usr/libexec/PlistBuddy -c "Print CFBundleVersion" iosApp/Info.plist || true
 
     artifacts:
       - iosApp/build/ios/ipa/*.ipa
@@ -66,3 +84,4 @@ workflows:
       app_store_connect:
         auth: integration
         submit_to_app_store: true
+
