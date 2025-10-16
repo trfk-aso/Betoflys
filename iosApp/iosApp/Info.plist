@@ -3,29 +3,13 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleShortVersionString</key>
-    <string>2.0</string>
+    <string>1.0</string>
 
     <key>CFBundleVersion</key>
-    <string>2</string>
-
-    <key>CFBundleIdentifier</key>
-    <string>com.betoflys.app</string>
-
-    <key>CFBundleName</key>
-    <string>ZoneLepro</string>
-
-    <key>UILaunchStoryboardName</key>
-    <string>LaunchScreen</string>
-
-    <key>UIMainStoryboardFile</key>
-    <string>Main</string>
-
-    <key>UISupportedInterfaceOrientations</key>
-    <array>
-        <string>UIInterfaceOrientationPortrait</string>
-    </array>
+    <string>1</string>
 
     <key>CADisableMinimumFrameDurationOnPhone</key>
     <true/>
 </dict>
 </plist>
+
