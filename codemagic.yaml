@@ -1,6 +1,6 @@
 workflows:
   ios-workflow:
-    name: iOS Build & Publish
+    name: iOS Build
     max_build_duration: 120
     instance_type: mac_mini_m1
     integrations:
@@ -29,7 +29,7 @@ workflows:
         script: |
           keychain add-certificates
 
-      - name: Set up code signing
+      - name: Set up code signing settings
         script: |
           cd $CM_BUILD_DIR/iosApp
           xcode-project use-profiles
@@ -37,18 +37,29 @@ workflows:
       - name: Increment build number
         script: |
           cd $CM_BUILD_DIR/iosApp
-          echo "Fetching latest build number from TestFlight..."
           BUILD_NUMBER=$(($(app-store-connect get-latest-testflight-build-number "$APP_ID") + 1))
           echo "✅ New build number: $BUILD_NUMBER"
 
-          # Обновляем CFBundleVersion
-          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" "Info.plist"
-          
-          # Опционально увеличим и CFBundleShortVersionString при каждом мажорном релизе
-          CURRENT_VERSION=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "Info.plist")
-          echo "Current short version: $CURRENT_VERSION"
-          
-          /usr/libexec/PlistBuddy -c "Print CFBundleVersion" "Info.plist"
+          PLIST_PATH="$CM_BUILD_DIR/iosApp/iosApp/Info.plist"
+
+          echo "📄 Updating Info.plist at: $PLIST_PATH"
+
+          # Убедимся, что файл существует
+          if [ ! -f "$PLIST_PATH" ]; then
+            echo "❌ Error: Info.plist not found at $PLIST_PATH"
+            exit 1
+          fi
+
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" "$PLIST_PATH"
+
+          # Если CFBundleShortVersionString отсутствует — добавим
+          SHORT_VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$PLIST_PATH" 2>/dev/null || echo "")
+          if [ -z "$SHORT_VERSION" ]; then
+            echo "ℹ️ CFBundleShortVersionString not found, setting default to 2.0"
+            /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string 2.0" "$PLIST_PATH"
+          fi
+
+          echo "✅ Info.plist updated successfully"
 
       - name: Build KMP shared framework
         script: |
@@ -60,22 +71,17 @@ workflows:
           export TARGET_BUILD_DIR="$CM_BUILD_DIR/iosApp/build/Release-iphoneos"
           export FRAMEWORKS_FOLDER_PATH="$TARGET_BUILD_DIR/ComposeApp.framework"
           export BUILT_PRODUCTS_DIR="$TARGET_BUILD_DIR"
-
+          
           mkdir -p "$TARGET_BUILD_DIR"
           
           ./gradlew :composeApp:embedAndSignAppleFrameworkForXcode -x syncComposeResourcesForIos
 
-      - name: Build iOS .ipa
+      - name: Build iOS
         script: |
           cd $CM_BUILD_DIR/iosApp
-          echo "Building iOS project..."
-          xcode-project build-ipa --project "$XCODE_PROJECT" --scheme "$XCODE_SCHEME"
-
-      - name: Debug Info.plist values
-        script: |
-          echo "Verifying Info.plist values:"
-          /usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" iosApp/Info.plist || true
-          /usr/libexec/PlistBuddy -c "Print CFBundleVersion" iosApp/Info.plist || true
+          xcode-project build-ipa \
+            --project "$XCODE_PROJECT" \
+            --scheme "$XCODE_SCHEME"
 
     artifacts:
       - iosApp/build/ios/ipa/*.ipa
