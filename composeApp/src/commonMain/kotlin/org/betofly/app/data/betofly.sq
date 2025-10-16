@@ -1,0 +1,336 @@
+-- Trip Table
+CREATE TABLE trip (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    start_date TEXT NOT NULL,
+    end_date TEXT NOT NULL,
+    category TEXT NOT NULL,
+    cover_image_id TEXT,
+    description TEXT,
+    tags TEXT, -- JSON array of strings
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    last_exported_at TEXT, -- nullable
+    progress REAL DEFAULT 0,
+    duration INTEGER DEFAULT 0  -- <--- новая колонка
+);
+
+-- Entry Table
+CREATE TABLE entry (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    trip_id INTEGER NOT NULL,
+    type TEXT NOT NULL,
+    title TEXT,
+    text TEXT,
+    media_ids TEXT, -- JSON array
+    latitude REAL,
+    longitude REAL,
+    timestamp TEXT NOT NULL,
+    tags TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(trip_id) REFERENCES trip(id) ON DELETE CASCADE
+);
+
+CREATE TABLE ThemeEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    isPurchased INTEGER NOT NULL, -- 1 = куплена, 0 = нет
+    type TEXT NOT NULL,           -- free / paid
+    previewRes TEXT,              -- ресурс для превью (например картинка/иконка)
+    primaryColor INTEGER,         -- основной цвет
+    splashText TEXT,              -- девиз/слоган
+    price REAL                    -- цена в долларах (NULL для бесплатных тем)
+);
+
+CREATE TABLE CurrentThemeEntity (
+    id INTEGER NOT NULL PRIMARY KEY DEFAULT 1,
+    themeId TEXT NOT NULL,
+    FOREIGN KEY(themeId) REFERENCES ThemeEntity(id)
+);
+
+INSERT INTO ThemeEntity(id, name, isPurchased, type, previewRes, primaryColor, splashText, price)
+VALUES
+('theme_light', 'Light', 1, 'free', 'bg_light', 4294967295, 'Shine bright!', NULL),
+('theme_dark', 'Dark', 1, 'free', 'bg_dark', 4278190080, 'Stay focused!', NULL),
+('theme_blue', 'Royal Blue', 0, 'paid', 'bg_royal_blue', 4283782485, 'Stay sharp!', 1.99),
+('theme_gold', 'Graphite Gold', 0, 'paid', 'bg_graphite_gold', 4294956800, 'Shine on!', 1.99);
+
+-- Place Table
+CREATE TABLE place (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    trip_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    latitude REAL NOT NULL,
+    longitude REAL NOT NULL,
+    note TEXT,
+    photo_id TEXT,
+    FOREIGN KEY(trip_id) REFERENCES trip(id) ON DELETE CASCADE
+);
+
+-- RoutePoint Table
+CREATE TABLE route_point (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    trip_id INTEGER NOT NULL,
+    latitude REAL NOT NULL,
+    longitude REAL NOT NULL,
+    timestamp TEXT NOT NULL,
+    altitude REAL,
+    speed REAL,
+    FOREIGN KEY(trip_id) REFERENCES trip(id) ON DELETE CASCADE
+);
+
+-- Tag Table
+CREATE TABLE tag (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    color TEXT
+);
+
+-- Favorite Table
+CREATE TABLE favorite (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    trip_id INTEGER,
+    entry_id INTEGER,
+    FOREIGN KEY(trip_id) REFERENCES trip(id) ON DELETE CASCADE,
+    FOREIGN KEY(entry_id) REFERENCES entry(id) ON DELETE CASCADE
+);
+
+-- Attachment Table
+CREATE TABLE attachment (
+    id TEXT NOT NULL PRIMARY KEY,
+    type TEXT NOT NULL,
+    path TEXT NOT NULL
+);
+
+CREATE TABLE recent_query (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    query TEXT NOT NULL UNIQUE,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-------------------------------------------------------
+-- QUERIES
+-------------------------------------------------------
+
+-- Insert Trip
+insertTrip:
+INSERT INTO trip(title, start_date, end_date, category, cover_image_id, description, tags, created_at, updated_at, last_exported_at, progress)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+-- Get all trips
+selectAllTrips:
+SELECT * FROM trip ORDER BY start_date DESC;
+
+-- Delete trip by id
+deleteTrip:
+DELETE FROM trip WHERE id = ?;
+
+-- Insert Entry
+insertEntry:
+INSERT INTO entry(trip_id, type, title, text, media_ids, latitude, longitude, timestamp, tags, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+updateTripUpdatedAt:
+UPDATE trip
+SET updated_at = ?
+WHERE id = ?;
+
+updateTripExportedAt:
+UPDATE trip
+SET last_exported_at = ?
+WHERE id = ?;
+
+selectRecentlyEdited:
+SELECT * FROM trip
+ORDER BY updated_at DESC
+LIMIT ?;
+
+selectRecentlyExported:
+SELECT * FROM trip
+WHERE last_exported_at IS NOT NULL
+ORDER BY last_exported_at DESC
+LIMIT ?;
+
+selectTripsByCategory:
+SELECT * FROM trip
+WHERE category = ?
+ORDER BY start_date DESC;
+
+selectEntriesForTrip:
+SELECT *
+FROM entry
+WHERE trip_id = ?;
+
+-- Favorites
+insertFavorite:
+INSERT INTO favorite(trip_id) VALUES (?);
+
+deleteFavoriteByTripId:
+DELETE FROM favorite WHERE trip_id = ?;
+
+selectFavoriteByTripId:
+SELECT * FROM favorite WHERE trip_id = ?;
+
+searchTrips:
+SELECT *
+FROM trip
+WHERE
+  (:query IS NULL OR title LIKE '%' || :query || '%' OR tags LIKE '%' || :query || '%')
+  AND (:category IS NULL OR category = :category)
+  AND (
+    :hasRoute IS NULL
+    OR (:hasRoute = 1 AND EXISTS (SELECT 1 FROM route_point rp WHERE rp.trip_id = trip.id))
+    OR (:hasRoute = 0 AND NOT EXISTS (SELECT 1 FROM route_point rp WHERE rp.trip_id = trip.id))
+  )
+  AND (
+    :hasMedia IS NULL
+    OR (:hasMedia = 1 AND EXISTS (
+          SELECT 1 FROM entry e WHERE e.trip_id = trip.id AND e.media_ids IS NOT NULL AND e.media_ids != ''
+    ))
+    OR (:hasMedia = 0 AND NOT EXISTS (
+          SELECT 1 FROM entry e WHERE e.trip_id = trip.id AND e.media_ids IS NOT NULL AND e.media_ids != ''
+    ))
+  )
+  AND (
+    :isFavorite IS NULL
+    OR (:isFavorite = 1 AND EXISTS (SELECT 1 FROM favorite f WHERE f.trip_id = trip.id))
+    OR (:isFavorite = 0 AND NOT EXISTS (SELECT 1 FROM favorite f WHERE f.trip_id = trip.id))
+  )
+  AND (:startDate IS NULL OR start_date >= :startDate)
+  AND (:endDate IS NULL OR end_date <= :endDate)
+ORDER BY start_date DESC;
+
+searchEntries:
+SELECT e.* FROM entry e
+JOIN trip t ON t.id = e.trip_id
+WHERE
+  (:query IS NULL OR e.title LIKE '%' || :query || '%' OR e.text LIKE '%' || :query || '%' OR e.tags LIKE '%' || :query || '%')
+  AND (:type IS NULL OR e.type = :type)
+  AND (:tripCategory IS NULL OR t.category = :tripCategory)
+  AND (
+    :hasMedia IS NULL
+    OR (:hasMedia = 1 AND (e.media_ids IS NOT NULL AND e.media_ids != ''))
+    OR (:hasMedia = 0 AND (e.media_ids IS NULL OR e.media_ids = ''))
+  )
+  AND (
+    :isFavorite IS NULL
+    OR (:isFavorite = 1 AND EXISTS (SELECT 1 FROM favorite f WHERE f.entry_id = e.id))
+    OR (:isFavorite = 0 AND NOT EXISTS (SELECT 1 FROM favorite f WHERE f.entry_id = e.id))
+  )
+  AND (:startDate IS NULL OR e.timestamp >= :startDate)
+  AND (:endDate IS NULL OR e.timestamp <= :endDate)
+ORDER BY e.timestamp DESC;
+
+
+selectRecentQueries:
+SELECT query FROM recent_query
+ORDER BY created_at DESC
+LIMIT ?;
+
+insertRecentQuery:
+INSERT INTO recent_query(query) VALUES (?);
+
+selectTripById:
+SELECT * FROM trip
+WHERE id = ?;
+
+selectFavoriteByEntryId:
+SELECT * FROM favorite
+WHERE entry_id = ?;
+
+selectRoutePointsForTrip:
+SELECT *
+FROM route_point
+WHERE trip_id = ?;
+
+updateTrip:
+UPDATE trip
+SET title = ?,
+    start_date = ?,
+    end_date = ?,
+    category = ?,
+    cover_image_id = ?,
+    description = ?,
+    tags = ?,
+    updated_at = ?
+WHERE id = ?;
+
+markTripAsExported:
+UPDATE trip
+SET last_exported_at = ?
+WHERE id = ?;
+
+isFavorite:
+SELECT EXISTS(SELECT 1 FROM favorite WHERE trip_id = ?);
+
+insertOrReplaceRecentQuery:
+INSERT OR REPLACE INTO recent_query(query, created_at)
+VALUES (?, datetime('now'));
+
+trimRecentQueries:
+DELETE FROM recent_query
+WHERE id NOT IN (
+    SELECT id FROM recent_query ORDER BY created_at DESC LIMIT ?
+);
+
+-- Select places for trip
+selectPlacesForTrip:
+SELECT *
+FROM place
+WHERE trip_id = ?;
+
+insertPlace:
+INSERT INTO place(trip_id, name, latitude, longitude, note, photo_id)
+VALUES (?, ?, ?, ?, ?, ?);
+
+insertRoutePoint:
+INSERT INTO route_point(trip_id, latitude, longitude, timestamp, altitude, speed)
+VALUES (?, ?, ?, ?, ?, ?);
+
+updateTripDuration:
+UPDATE trip
+SET duration = ?
+WHERE id = ?;
+
+insertEntryFavorite:
+INSERT INTO favorite(entry_id) VALUES (?);
+
+deleteEntryFavoriteByEntryId:
+DELETE FROM favorite WHERE entry_id = ?;
+
+getFavoriteByEntryId:
+SELECT * FROM favorite WHERE entry_id = ?;
+
+isEntryFavorite:
+SELECT EXISTS(SELECT 1 FROM favorite WHERE entry_id = ?);
+
+selectAllFavorites:
+SELECT * FROM favorite;
+
+deleteEntryById:
+DELETE FROM entry WHERE id = ?;
+
+updateEntry:
+UPDATE entry
+SET title = ?, text = ?, media_ids = ?, latitude = ?, longitude = ?, updated_at = ?
+WHERE id = ?;
+
+getThemes:
+SELECT * FROM ThemeEntity;
+
+getCurrentThemeId:
+SELECT themeId FROM CurrentThemeEntity WHERE id = 1;
+
+insertCurrentTheme:
+INSERT OR REPLACE INTO CurrentThemeEntity(id, themeId) VALUES (1, ?);
+
+purchaseTheme:
+UPDATE ThemeEntity
+SET isPurchased = 1
+WHERE id = ?;
+
+insertTheme:
+INSERT OR REPLACE INTO ThemeEntity(
+    id, name, isPurchased, type, previewRes, primaryColor, splashText
+) VALUES (?, ?, ?, ?, ?, ?, ?);
+
