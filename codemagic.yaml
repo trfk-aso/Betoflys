@@ -37,7 +37,7 @@ workflows:
       - name: Increment build number
         script: |
           #!/bin/sh
-          cd $CM_BUILD_DIR
+          cd $CM_BUILD_DIR/iosApp
           LATEST_BUILD_NUMBER=$(app-store-connect get-latest-app-store-build-number "$APP_ID")
           agvtool new-version -all $(($LATEST_BUILD_NUMBER + 1))
 
@@ -54,6 +54,7 @@ workflows:
           
           mkdir -p "$TARGET_BUILD_DIR"
           
+          cd $CM_BUILD_DIR
           ./gradlew :composeApp:embedAndSignAppleFrameworkForXcode -x syncComposeResourcesForIos
 
       - name: Build iOS
