@@ -78,8 +78,8 @@ fun OnboardingScreen(navController: NavHostController) {
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 5.dp)
                 .size(
-                    width = if (isLastPage) 240.dp else 200.dp,
-                    height = 220.dp
+                    width = if (isLastPage) 200.dp else 200.dp,
+                    height = 245.dp
                 )
                 .clickable {
                     if (isLastPage) {

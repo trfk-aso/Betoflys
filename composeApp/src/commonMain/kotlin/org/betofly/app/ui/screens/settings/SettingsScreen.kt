@@ -112,6 +112,12 @@ fun SettingsScreen(
         else -> Color(0xFF00110D)
     }
 
+    val (exportColor, importColor, resetColor) = Triple(
+        Color(0xFF3FBB27),
+        Color(0xFFA9BD12),
+        Color(0xFFBD1212)
+    )
+
     val textColor = Color.White
     Box(modifier = Modifier.fillMaxSize()) {
 
@@ -240,6 +246,29 @@ fun SettingsScreen(
                         }
                     }
 
+                    item {
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Button(
+                                onClick = { viewModel.restorePurchases() },
+                                modifier = Modifier
+                                    .fillMaxWidth(0.6f)
+                                    .padding(top = 8.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = exportColor
+                                )
+                            ) {
+                                Text(
+                                    "Restore Purchases",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+                    }
+
                     item { Spacer(Modifier.height(24.dp)) }
 
                     item {
@@ -253,11 +282,6 @@ fun SettingsScreen(
                         )
                     }
 
-                    val (exportColor, importColor, resetColor) = Triple(
-                        Color(0xFF3FBB27),
-                        Color(0xFFA9BD12),
-                        Color(0xFFBD1212)
-                    )
                     item {
                         Column(
                             modifier = Modifier.fillMaxWidth(),
