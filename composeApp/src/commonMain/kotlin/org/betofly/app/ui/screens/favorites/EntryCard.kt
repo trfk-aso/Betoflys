@@ -15,7 +15,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
@@ -124,7 +126,154 @@ fun EntryCard(
                             icon,
                             contentDescription = entry.type.name,
                             tint = Color.White,
-                            modifier = Modifier.size(48.dp)
+                            modifier = Modifier.size(90.dp)
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(8.dp))
+
+                entry.title?.let {
+                    Text(it, style = MaterialTheme.typography.titleMedium, color = Color.White)
+                }
+                entry.text?.let {
+                    Text(
+                        it,
+                        style = MaterialTheme.typography.bodySmall,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        color = Color.LightGray
+                    )
+                }
+
+                Spacer(Modifier.height(4.dp))
+                Text(tripTitle, style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+
+                Spacer(Modifier.height(8.dp))
+
+            }
+
+            if (isFavorite) {
+                Image(
+                    painter = painterResource(
+                        when (currentThemeId) {
+                            "theme_light" -> Res.drawable.favorite_light
+                            "theme_dark" -> Res.drawable.favorite_dark
+                            "theme_blue" -> Res.drawable.favorite_blue
+                            "theme_gold" -> Res.drawable.favorite_gold
+                            else -> Res.drawable.favorite_light
+                        }
+                    ),
+                    contentDescription = "Favorite",
+                    modifier = Modifier
+                        .size(50.dp)
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                        .clickable { onFavoriteToggle() }
+                )
+            }
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.background(cardBackgroundColor, shape = RoundedCornerShape(8.dp))
+        ) {
+            val actions = mutableListOf<String>()
+            if (onEdit != null) actions.add("Edit")
+            actions.add("Favorite")
+            if (onDelete != null) actions.add("Delete")
+
+            actions.forEach { action ->
+                DropdownMenuItem(
+                    onClick = {
+                        when (action) {
+                            "Edit" -> onEdit?.invoke()
+                            "Favorite" -> onFavoriteToggle()
+                            "Delete" -> onDelete?.invoke()
+                        }
+                        expanded = false
+                    },
+                    text = {
+                        Box(
+                            modifier = Modifier
+                                .background(buttonBackgroundColor(currentThemeId, action), shape = RoundedCornerShape(6.dp))
+                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Text(action, color = Color.White)
+                        }
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun EntryCardForDetails(
+    entry: EntryModel,
+    tripTitle: String,
+    isFavorite: Boolean,
+    currentThemeId: String,
+    onClick: () -> Unit,
+    onFavoriteToggle: () -> Unit,
+    onEdit: (() -> Unit)? = null,
+    onDelete: (() -> Unit)? = null,
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    val cardBackgroundColor = when (currentThemeId) {
+        "theme_light" -> Color(0xFF003322)
+        "theme_dark" -> Color(0xFF003322)
+        "theme_blue" -> Color(0xFF0A1A3D)
+        "theme_gold" -> Color(0xFF814011)
+        else -> Color(0xFF003322)
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = { expanded = true }
+            ),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = cardBackgroundColor),
+        elevation = CardDefaults.cardElevation(4.dp)
+    ) {
+        Box {
+            Column(modifier = Modifier.padding(12.dp)) {
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp)
+                        .clip(RoundedCornerShape(12.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (entry.type == EntryType.PHOTO && entry.mediaIds.isNotEmpty()) {
+                        val mediaId = entry.mediaIds.first()
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                        ) {
+                            TripImage(
+                                mediaId,
+                            )
+                        }
+                    } else {
+                        val icon = when (entry.type) {
+                            EntryType.NOTE -> Icons.Default.Description
+                            EntryType.PLACE -> Icons.Default.Place
+                            EntryType.ROUTE_POINT -> Icons.Default.Tour
+                            else -> Icons.Default.Photo
+                        }
+                        Icon(
+                            icon,
+                            contentDescription = entry.type.name,
+                            tint = Color.White,
+                            modifier = Modifier.size(90.dp)
                         )
                     }
                 }

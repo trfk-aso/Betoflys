@@ -41,7 +41,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -75,6 +77,7 @@ import betofly.composeapp.generated.resources.ic_settings_light
 import org.betofly.app.model.EntryModel
 import org.betofly.app.model.TripUiModel
 import org.betofly.app.repository.ThemeRepository
+import org.betofly.app.repository.TripRepository
 import org.betofly.app.ui.screens.Screen
 import org.betofly.app.ui.screens.home.EmptyTripsState
 import org.betofly.app.ui.screens.home.QuickAccessRow
@@ -94,6 +97,7 @@ fun FavoritesScreen(
     navController: NavHostController,
     viewModelFavorites: FavoritesViewModel = koinInject(),
     themeRepository: ThemeRepository,
+    tripRepository: TripRepository = koinInject(),
     viewModelJournal: JournalViewModel = koinInject()
 ) {
     val uiState by viewModelFavorites.uiState.collectAsState()
@@ -119,270 +123,298 @@ fun FavoritesScreen(
         "theme_gold" -> Color(0xFF673001)
         else -> Color(0xFF00110D)
     }
+    Box(modifier = Modifier.fillMaxSize()) {
 
-    Scaffold(
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = {
-            Column {
-                TopAppBar(
-                    title = {
-                        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                            Text(
-                                text = "Favorites",
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 24.sp
-                            )
-                        }
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = { navController.popBackStack() }) {
-                            val backIconRes = when (currentThemeId) {
-                                "theme_light" -> Res.drawable.ic_back_light
-                                "theme_dark" -> Res.drawable.ic_back_dark
-                                "theme_blue" -> Res.drawable.ic_back_blue
-                                "theme_gold" -> Res.drawable.ic_back_gold
-                                else -> Res.drawable.ic_back_light
-                            }
-                            Image(
-                                painter = painterResource(backIconRes),
-                                contentDescription = "Back",
-                                modifier = Modifier.size(32.dp)
-                            )
-                        }
-                    },
-                    actions = {
-                        IconButton(onClick = { navController.navigate(Screen.Settings.route) }) {
-                            val settingsIconRes = when (currentThemeId) {
-                                "theme_light" -> Res.drawable.ic_settings_light
-                                "theme_dark" -> Res.drawable.ic_settings_dark
-                                "theme_blue" -> Res.drawable.ic_settings_blue
-                                "theme_gold" -> Res.drawable.ic_settings_gold
-                                else -> Res.drawable.ic_settings_light
-                            }
-                            Image(
-                                painter = painterResource(settingsIconRes),
-                                contentDescription = "Settings",
-                                modifier = Modifier.size(32.dp)
-                            )
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = topBarBackgroundColor
-                    )
-                )
-
-                val tabBackgroundColor = when (currentThemeId) {
-                    "theme_light" -> Color(0xFF003322)
-                    "theme_dark" -> Color(0xFF003322)
-                    "theme_blue" -> Color(0xFF0A1A3D)
-                    "theme_gold" -> Color(0xFF814011)
-                    else -> Color(0xFF003322)
-                }
-
-                val tabs = listOf("Trips", "Entries")
-                val selectedIndex = tabs.indexOf(selectedTab)
-
-                TabRow(
-                    selectedTabIndex = selectedIndex,
-                    containerColor = topBarBackgroundColor,
-                    indicator = { tabPositions ->
-                        TabRowDefaults.Indicator(
-                            Modifier.tabIndicatorOffset(tabPositions[selectedIndex]),
-                            color = tabBackgroundColor
-                        )
-                    }
-                ) {
-                    tabs.forEachIndexed { index, title ->
-                        Tab(
-                            selected = index == selectedIndex,
-                            onClick = {
-                                viewModelFavorites.onTabSelected(tabs[index])
-                                currentPage = 0
-                            },
-                            text = {
-                                Text(
-                                    text = title,
-                                    color = if (index == selectedIndex) Color.White else Color.LightGray
-                                )
-                            },
-                            modifier = Modifier.background(tabBackgroundColor)
-                        )
-                    }
-                }
-            }
-        },
-        bottomBar = {
-            val paginationButtonColor = when (currentThemeId) {
-                "theme_light" -> Color(0xFF003322)
-                "theme_dark" -> Color(0xFF003322)
-                "theme_blue" -> Color(0xFF0A1A3D)
-                "theme_gold" -> Color(0xFF814011)
-                else -> Color(0xFF003322)
-            }
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(paginationButtonColor)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp)
-                        .background(paginationButtonColor),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-
-                    val paginationButtonColor = when (currentThemeId) {
-                        "theme_light" -> Color(0xFF004433)
-                        "theme_dark" -> Color(0xFF004433)
-                        "theme_blue" -> Color(0xFF0C1C4F)
-                        "theme_gold" -> Color(0xFF92521A)
-                        else -> Color(0xFF004433)
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .background(paginationButtonColor, shape = RoundedCornerShape(8.dp)) // фон как у табов
-                            .clickable(
-                                enabled = currentPage > 0,
-                                indication = null,
-                                interactionSource = remember { MutableInteractionSource() }
-                            ) { if (currentPage > 0) currentPage-- },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color.White,
-                            modifier = Modifier.size(36.dp)
-                        )
-                    }
-
-                    val canGoForward = when (uiState) {
-                        is FavoritesUiState.Success -> {
-                            val itemsList = if (selectedTab == "Trips") {
-                                (uiState as FavoritesUiState.Success).trips
-                            } else {
-                                (uiState as FavoritesUiState.Success).entries
-                            }
-                            (currentPage + 1) * maxItems < itemsList.size
-                        }
-                        else -> false
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .background(paginationButtonColor, shape = RoundedCornerShape(8.dp))
-                            .clickable(
-                                enabled = canGoForward,
-                                indication = null,
-                                interactionSource = remember { MutableInteractionSource() }
-                            ) { if (canGoForward) currentPage++ },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowForward,
-                            contentDescription = "Forward",
-                            tint = Color.White,
-                            modifier = Modifier.size(36.dp)
-                        )
-                    }
-                }
-
-                QuickAccessRow(
-                    currentThemeId = currentThemeId ?: "theme_light",
-                    onNewTrip = { navController.navigate(Screen.Home.route) },
-                    onJournal = { navController.navigate(Screen.Journal.route) },
-                    onSearch = { navController.navigate(Screen.Search.route) },
-                    onFavorites = { navController.navigate(Screen.Favorites.route) },
-                    onStatistics = { navController.navigate(Screen.Statistics.route) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color.Transparent)
-                )
-            }
-        }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
+        key(currentThemeId) {
             Image(
                 painter = painterResource(backgroundRes),
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
             )
+        }
+        Scaffold(
+            containerColor = Color.Transparent,
+            contentWindowInsets = WindowInsets(0, 0, 0, 0),
+            topBar = {
+                Column {
+                    TopAppBar(
+                        title = {
+                            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = "Favorites",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 24.sp
+                                )
+                            }
+                        },
+                        navigationIcon = {
+                            IconButton(onClick = { navController.popBackStack() }) {
+                                val backIconRes = when (currentThemeId) {
+                                    "theme_light" -> Res.drawable.ic_back_light
+                                    "theme_dark" -> Res.drawable.ic_back_dark
+                                    "theme_blue" -> Res.drawable.ic_back_blue
+                                    "theme_gold" -> Res.drawable.ic_back_gold
+                                    else -> Res.drawable.ic_back_light
+                                }
+                                Image(
+                                    painter = painterResource(backIconRes),
+                                    contentDescription = "Back",
+                                    modifier = Modifier.size(32.dp)
+                                )
+                            }
+                        },
+                        actions = {
+                            IconButton(onClick = { navController.navigate(Screen.Settings.route) }) {
+                                val settingsIconRes = when (currentThemeId) {
+                                    "theme_light" -> Res.drawable.ic_settings_light
+                                    "theme_dark" -> Res.drawable.ic_settings_dark
+                                    "theme_blue" -> Res.drawable.ic_settings_blue
+                                    "theme_gold" -> Res.drawable.ic_settings_gold
+                                    else -> Res.drawable.ic_settings_light
+                                }
+                                Image(
+                                    painter = painterResource(settingsIconRes),
+                                    contentDescription = "Settings",
+                                    modifier = Modifier.size(32.dp)
+                                )
+                            }
+                        },
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = Color.Transparent
+                        )
+                    )
 
-            when (val state = uiState) {
-                is FavoritesUiState.Loading -> Box(
-                    Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) { CircularProgressIndicator() }
+                    val tabBackgroundColor = when (currentThemeId) {
+                        "theme_light" -> Color(0xFF003322)
+                        "theme_dark" -> Color(0xFF003322)
+                        "theme_blue" -> Color(0xFF0A1A3D)
+                        "theme_gold" -> Color(0xFF814011)
+                        else -> Color(0xFF003322)
+                    }
 
-                is FavoritesUiState.Empty -> EmptyTripsState(
-                    currentThemeId = currentThemeId ?: "theme_light",
-                    onCreateTrip = { navController.navigate(Screen.CreateTrip.route) }
+                    val tabs = listOf("Trips", "Entries")
+                    val selectedIndex = tabs.indexOf(selectedTab)
+
+                    TabRow(
+                        selectedTabIndex = selectedIndex,
+                        containerColor = topBarBackgroundColor,
+                        indicator = { tabPositions ->
+                            TabRowDefaults.Indicator(
+                                Modifier.tabIndicatorOffset(tabPositions[selectedIndex]),
+                                color = tabBackgroundColor
+                            )
+                        }
+                    ) {
+                        tabs.forEachIndexed { index, title ->
+                            Tab(
+                                selected = index == selectedIndex,
+                                onClick = {
+                                    viewModelFavorites.onTabSelected(tabs[index])
+                                    currentPage = 0
+                                },
+                                text = {
+                                    Text(
+                                        text = title,
+                                        color = if (index == selectedIndex) Color.White else Color.LightGray
+                                    )
+                                },
+                                modifier = Modifier.background(tabBackgroundColor)
+                            )
+                        }
+                    }
+                }
+            },
+            bottomBar = {
+                val paginationButtonColor = when (currentThemeId) {
+                    "theme_light" -> Color(0xFF003322)
+                    "theme_dark" -> Color(0xFF003322)
+                    "theme_blue" -> Color(0xFF0A1A3D)
+                    "theme_gold" -> Color(0xFF814011)
+                    else -> Color(0xFF003322)
+                }
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(paginationButtonColor)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                            .background(paginationButtonColor),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+
+                        val paginationButtonColor = when (currentThemeId) {
+                            "theme_light" -> Color(0xFF004433)
+                            "theme_dark" -> Color(0xFF004433)
+                            "theme_blue" -> Color(0xFF0C1C4F)
+                            "theme_gold" -> Color(0xFF92521A)
+                            else -> Color(0xFF004433)
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .size(48.dp)
+                                .background(
+                                    paginationButtonColor,
+                                    shape = RoundedCornerShape(8.dp)
+                                ) // фон как у табов
+                                .clickable(
+                                    enabled = currentPage > 0,
+                                    indication = null,
+                                    interactionSource = remember { MutableInteractionSource() }
+                                ) { if (currentPage > 0) currentPage-- },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowBack,
+                                contentDescription = "Back",
+                                tint = Color.White,
+                                modifier = Modifier.size(36.dp)
+                            )
+                        }
+
+                        val canGoForward = when (uiState) {
+                            is FavoritesUiState.Success -> {
+                                val itemsList = if (selectedTab == "Trips") {
+                                    (uiState as FavoritesUiState.Success).trips
+                                } else {
+                                    (uiState as FavoritesUiState.Success).entries
+                                }
+                                (currentPage + 1) * maxItems < itemsList.size
+                            }
+
+                            else -> false
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .size(48.dp)
+                                .background(paginationButtonColor, shape = RoundedCornerShape(8.dp))
+                                .clickable(
+                                    enabled = canGoForward,
+                                    indication = null,
+                                    interactionSource = remember { MutableInteractionSource() }
+                                ) { if (canGoForward) currentPage++ },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowForward,
+                                contentDescription = "Forward",
+                                tint = Color.White,
+                                modifier = Modifier.size(36.dp)
+                            )
+                        }
+                    }
+
+                    QuickAccessRow(
+                        currentThemeId = currentThemeId ?: "theme_light",
+                        onNewTrip = { navController.navigate(Screen.Home.route) },
+                        onJournal = { navController.navigate(Screen.Journal.route) },
+                        onSearch = { navController.navigate(Screen.Search.route) },
+                        onFavorites = { navController.navigate(Screen.Favorites.route) },
+                        onStatistics = { navController.navigate(Screen.Statistics.route) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color.Transparent)
+                    )
+                }
+            }
+        ) { paddingValues ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                Image(
+                    painter = painterResource(backgroundRes),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
                 )
 
-                is FavoritesUiState.Error -> Box(
-                    Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) { Text("Error: ${state.message}") }
+                when (val state = uiState) {
+                    is FavoritesUiState.Loading -> Box(
+                        Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) { CircularProgressIndicator() }
 
-                is FavoritesUiState.Success -> {
-                    val itemsList = if (selectedTab == "Trips") state.trips else state.entries
-                    val startIndex = currentPage * maxItems
-                    val endIndex = (startIndex + maxItems).coerceAtMost(itemsList.size)
-                    val paginatedItems = itemsList.subList(startIndex, endIndex)
+                    is FavoritesUiState.Empty -> EmptyTripsState(
+                        currentThemeId = currentThemeId ?: "theme_light",
+                        onCreateTrip = { navController.navigate(Screen.CreateTrip.route) }
+                    )
 
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(paginatedItems) { item ->
-                            if (selectedTab == "Trips") {
-                                val tripUi = item as TripUiModel
-                                SwipeToDismissCustom(
-                                    onDismiss = { viewModelFavorites.toggleTripFavorite(tripUi.trip.id) }
-                                ) {
-                                    TripCard(
-                                        tripUi = tripUi,
-                                        currentThemeId = currentThemeId ?: "theme_light",
-                                        onClick = {
-                                            viewModelFavorites.onTripSelected(tripUi.trip.id)
-                                            navController.navigate(Screen.TripDetails.route)
-                                        },
-                                        onEdit = {},
-                                        onExport = {},
-                                        onFavorite = { viewModelFavorites.toggleTripFavorite(tripUi.trip.id) },
-                                        onDelete = {}
-                                    )
-                                }
-                            } else {
-                                val entry = item as EntryModel
-                                SwipeToDismissCustom(
-                                    onDismiss = { viewModelFavorites.toggleEntryFavorite(entry.id) }
-                                ) {
-                                    EntryCard(
-                                        entry = entry,
-                                        tripTitle = entry.title ?: "",
-                                        currentThemeId = currentThemeId ?: "theme_light",
-                                        isFavorite = viewModelFavorites.favoriteEntryIds.collectAsState().value.contains(entry.id),
-                                        onClick = {
-                                            viewModelFavorites.onTripSelected(entry.tripId)
-                                            navController.navigate(Screen.TripDetails.route)
-                                        },
-                                        onFavoriteToggle = {
-                                            viewModelFavorites.toggleEntryFavorite(entry.id)
+                    is FavoritesUiState.Error -> Box(
+                        Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) { Text("Error: ${state.message}") }
+
+                    is FavoritesUiState.Success -> {
+                        val itemsList = if (selectedTab == "Trips") state.trips else state.entries
+                        val startIndex = currentPage * maxItems
+                        val endIndex = (startIndex + maxItems).coerceAtMost(itemsList.size)
+                        val paginatedItems = itemsList.subList(startIndex, endIndex)
+
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(paginatedItems) { item ->
+                                if (selectedTab == "Trips") {
+                                    val tripUi = item as TripUiModel
+                                    SwipeToDismissCustom(
+                                        onDismiss = { viewModelFavorites.toggleTripFavorite(tripUi.trip.id) }
+                                    ) {
+                                        TripCard(
+                                            tripUi = tripUi,
+                                            currentThemeId = currentThemeId ?: "theme_light",
+                                            onClick = {
+                                                viewModelFavorites.onTripSelected(tripUi.trip.id)
+                                                navController.navigate(Screen.TripDetails.route)
+                                            },
+                                            onEdit = {},
+                                            onExport = {},
+                                            onFavorite = {
+                                                viewModelFavorites.toggleTripFavorite(
+                                                    tripUi.trip.id
+                                                )
+                                            },
+                                            onDelete = {}
+                                        )
+                                    }
+                                } else {
+                                    val entry = item as EntryModel
+
+                                    val tripTitleState =
+                                        produceState<String?>(initialValue = null, entry.tripId) {
+                                            value = tripRepository.getTripById(entry.tripId)?.title
                                         }
-                                    )
+                                    val tripTitle = tripTitleState.value ?: ""
+
+                                    SwipeToDismissCustom(
+                                        onDismiss = { viewModelFavorites.toggleEntryFavorite(entry.id) }
+                                    ) {
+                                        EntryCard(
+                                            entry = entry,
+                                            tripTitle = tripTitle,
+                                            currentThemeId = currentThemeId ?: "theme_light",
+                                            isFavorite = viewModelFavorites.favoriteEntryIds.collectAsState().value.contains(
+                                                entry.id
+                                            ),
+                                            onClick = {
+                                                viewModelFavorites.onTripSelected(entry.tripId)
+                                                navController.navigate(Screen.TripDetails.route)
+                                            },
+                                            onFavoriteToggle = {
+                                                viewModelFavorites.toggleEntryFavorite(entry.id)
+                                            }
+                                        )
+                                    }
                                 }
                             }
                         }

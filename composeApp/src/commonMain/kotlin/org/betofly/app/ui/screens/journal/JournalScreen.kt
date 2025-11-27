@@ -57,6 +57,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -92,6 +93,7 @@ import org.betofly.app.model.EntryModel
 import org.betofly.app.model.EntryType
 import org.betofly.app.model.TripCategory
 import org.betofly.app.repository.ThemeRepository
+import org.betofly.app.repository.TripRepository
 import org.betofly.app.ui.screens.Screen
 import org.betofly.app.ui.screens.favorites.EntryCard
 import org.betofly.app.ui.screens.favorites.SwipeToDismissCustom
@@ -176,6 +178,7 @@ fun JournalScreen(
                 },
                 currentThemeId = currentThemeId ?: "theme_light",
             )
+
             EntryType.PLACE -> EditPlaceDialog(
                 entry = entry,
                 onDismiss = { editingEntry = null },
@@ -185,6 +188,7 @@ fun JournalScreen(
                 },
                 currentThemeId = currentThemeId ?: "theme_light",
             )
+
             EntryType.PHOTO -> EditPhotoDialog(
                 entry = entry,
                 onDismiss = { editingEntry = null },
@@ -194,6 +198,7 @@ fun JournalScreen(
                 },
                 currentThemeId = currentThemeId ?: "theme_light",
             )
+
             else -> {}
         }
     }
@@ -228,7 +233,13 @@ fun JournalScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                item { Text("Filters", style = MaterialTheme.typography.titleMedium, color = textColor) }
+                item {
+                    Text(
+                        "Filters",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = textColor
+                    )
+                }
 
                 item {
                     Text("Entry Type", color = textColor)
@@ -261,7 +272,9 @@ fun JournalScreen(
                                 selected = filter?.tripCategory == cat,
                                 onClick = {
                                     viewModel.setFilter(
-                                        filter?.copy(tripCategory = cat) ?: JournalFilter(tripCategory = cat)
+                                        filter?.copy(tripCategory = cat) ?: JournalFilter(
+                                            tripCategory = cat
+                                        )
                                     )
                                 },
                                 label = { Text(cat.name, color = textColor) },
@@ -345,7 +358,12 @@ fun JournalScreen(
                                 }) { Text("OK", color = textColor) }
                             },
                             dismissButton = {
-                                TextButton(onClick = { showStartPicker = false }) { Text("Cancel", color = textColor) }
+                                TextButton(onClick = { showStartPicker = false }) {
+                                    Text(
+                                        "Cancel",
+                                        color = textColor
+                                    )
+                                }
                             }
                         ) { DatePicker(state = startDatePickerState) }
                     }
@@ -368,7 +386,12 @@ fun JournalScreen(
                                 }) { Text("OK", color = textColor) }
                             },
                             dismissButton = {
-                                TextButton(onClick = { showEndPicker = false }) { Text("Cancel", color = textColor) }
+                                TextButton(onClick = { showEndPicker = false }) {
+                                    Text(
+                                        "Cancel",
+                                        color = textColor
+                                    )
+                                }
                             }
                         ) { DatePicker(state = endDatePickerState) }
                     }
@@ -390,7 +413,8 @@ fun JournalScreen(
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                         TextButton(onClick = {
                             viewModel.setFilter(null)
-                            scope.launch { sheetState.hide() }.invokeOnCompletion { if (!sheetState.isVisible) showSheet = false }
+                            scope.launch { sheetState.hide() }
+                                .invokeOnCompletion { if (!sheetState.isVisible) showSheet = false }
                         }) { Text("Reset", color = textColor) }
 
                         Spacer(Modifier.width(8.dp))
@@ -398,7 +422,9 @@ fun JournalScreen(
                         Button(
                             onClick = {
                                 viewModel.loadEntries()
-                                scope.launch { sheetState.hide() }.invokeOnCompletion { if (!sheetState.isVisible) showSheet = false }
+                                scope.launch { sheetState.hide() }.invokeOnCompletion {
+                                    if (!sheetState.isVisible) showSheet = false
+                                }
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = inputBackgroundColor)
                         ) { Text("Apply", color = textColor) }
@@ -415,245 +441,287 @@ fun JournalScreen(
         "theme_gold" -> Color(0xFF673001)
         else -> Color(0xFF00110D)
     }
+    Box(modifier = Modifier.fillMaxSize()) {
 
-    Scaffold(
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = {
-            TopAppBar(
-                title = {
-                    Box(
-                        Modifier.fillMaxWidth(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "Journal",
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 24.sp
-                        )
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        val backIconRes = when (currentThemeId) {
-                            "theme_light" -> Res.drawable.ic_back_light
-                            "theme_dark" -> Res.drawable.ic_back_dark
-                            "theme_blue" -> Res.drawable.ic_back_blue
-                            "theme_gold" -> Res.drawable.ic_back_gold
-                            else -> Res.drawable.ic_back_light
-                        }
-                        Image(
-                            painter = painterResource(backIconRes),
-                            contentDescription = "Back",
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { navController.navigate(Screen.Settings.route) }) {
-                        val settingsIconRes = when (currentThemeId) {
-                            "theme_light" -> Res.drawable.ic_settings_light
-                            "theme_dark" -> Res.drawable.ic_settings_dark
-                            "theme_blue" -> Res.drawable.ic_settings_blue
-                            "theme_gold" -> Res.drawable.ic_settings_gold
-                            else -> Res.drawable.ic_settings_light
-                        }
-                        Image(
-                            painter = painterResource(settingsIconRes),
-                            contentDescription = "Settings",
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = topBarBackgroundColor
-                )
-            )
-        },
-        bottomBar = {
-            QuickAccessRow(
-                currentThemeId = currentThemeId ?: "theme_light",
-                onNewTrip = { navController.navigate(Screen.Home.route) },
-                onJournal = { navController.navigate(Screen.Journal.route) },
-                onSearch = { navController.navigate(Screen.Search.route) },
-                onFavorites = { navController.navigate(Screen.Favorites.route) },
-                onStatistics = { navController.navigate(Screen.Statistics.route) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .shadow(4.dp)
-            )
-        }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
+        key(currentThemeId) {
             Image(
                 painter = painterResource(backgroundRes),
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
             )
-
-            Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-                Spacer(Modifier.height(8.dp))
-
-                var showEntryType by remember { mutableStateOf(false) }
-                var showTripCategory by remember { mutableStateOf(false) }
-                var showDateRange by remember { mutableStateOf(false) }
-
-                val textColor = Color.White
-
-                val inputBackgroundColors = when (currentThemeId) {
-                    "theme_light", "theme_dark" -> Color(0xFF3FBB27)
-                    "theme_blue" -> Color(0xFF2BA7FF)
-                    "theme_gold" -> Color(0xFFFC8600)
-                    else -> Color(0xFF3FBB27)
-                }
-
-                Row(
-                    Modifier
-                        .fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    ThemedChip(
-                        text = "Entry Type",
-                        selected = showEntryType,
-                        onClick = { showEntryType = !showEntryType },
-                        background = inputBackgroundColors
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    ThemedChip(
-                        text = "Trip Category",
-                        selected = showTripCategory,
-                        onClick = { showTripCategory = !showTripCategory },
-                        background = inputBackgroundColors
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    ThemedChip(
-                        text = "Date Range",
-                        selected = showDateRange,
-                        onClick = { showDateRange = !showDateRange },
-                        background = inputBackgroundColors
-                    )
-                }
-
-                Spacer(Modifier.height(8.dp))
-
-                if (showEntryType) {
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        EntryType.values().forEach { type ->
-                            ThemedChip(
-                                text = type.name,
-                                selected = filter?.type == type,
-                                onClick = { viewModel.setFilter(filter?.copy(type = type) ?: JournalFilter(type = type)) },
-                                background = inputBackgroundColor
+        }
+        Scaffold(
+            containerColor = Color.Transparent,
+            contentWindowInsets = WindowInsets(0, 0, 0, 0),
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "Journal",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 24.sp
                             )
                         }
-                    }
-                }
+                    },
 
-                if (showTripCategory) {
-                    Spacer(Modifier.height(8.dp))
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    navigationIcon = {
+                        IconButton(onClick = { navController.popBackStack() }) {
 
-                    ) {
-                        TripCategory.values().forEach { cat ->
-                            ThemedChip(
-                                text = cat.name,
-                                selected = filter?.tripCategory == cat,
-                                onClick = { viewModel.setFilter(filter?.copy(tripCategory = cat) ?: JournalFilter(tripCategory = cat)) },
-                                background = inputBackgroundColor
+                            val backIconRes = when (currentThemeId) {
+                                "theme_light" -> Res.drawable.ic_back_light
+                                "theme_dark" -> Res.drawable.ic_back_dark
+                                "theme_blue" -> Res.drawable.ic_back_blue
+                                "theme_gold" -> Res.drawable.ic_back_gold
+                                else -> Res.drawable.ic_back_light
+                            }
+
+                            Image(
+                                painter = painterResource(backIconRes),
+                                contentDescription = "Back",
+                                modifier = Modifier.size(32.dp)
                             )
                         }
-                    }
-                }
+                    },
 
-                if (showDateRange) {
+                    actions = {
+                        Box(modifier = Modifier.size(48.dp)) {}
+                    },
+
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent,
+                        scrolledContainerColor = Color.Transparent
+                    )
+                )
+            },
+            bottomBar = {
+                QuickAccessRow(
+                    currentThemeId = currentThemeId ?: "theme_light",
+                    onNewTrip = { navController.navigate(Screen.Home.route) },
+                    onJournal = { navController.navigate(Screen.Journal.route) },
+                    onSearch = { navController.navigate(Screen.Search.route) },
+                    onFavorites = { navController.navigate(Screen.Favorites.route) },
+                    onStatistics = { navController.navigate(Screen.Statistics.route) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .shadow(4.dp)
+                )
+            }
+        ) { paddingValues ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                Image(
+                    painter = painterResource(backgroundRes),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+
+                Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
                     Spacer(Modifier.height(8.dp))
 
-                    val startDatePickerState = rememberDatePickerState(initialSelectedDateMillis = filter?.startDate?.toEpochMillis())
-                    val endDatePickerState = rememberDatePickerState(initialSelectedDateMillis = filter?.endDate?.toEpochMillis())
-                    var showStartPicker by remember { mutableStateOf(false) }
-                    var showEndPicker by remember { mutableStateOf(false) }
+                    var showEntryType by remember { mutableStateOf(false) }
+                    var showTripCategory by remember { mutableStateOf(false) }
+                    var showDateRange by remember { mutableStateOf(false) }
 
-                    if (showStartPicker) {
-                        DatePickerDialog(
-                            onDismissRequest = { showStartPicker = false },
-                            confirmButton = {
-                                TextButton(onClick = {
-                                    startDatePickerState.selectedDateMillis?.let {
-                                        val picked = Instant.fromEpochMilliseconds(it)
-                                            .toLocalDateTime(TimeZone.currentSystemDefault()).date
-                                        val currentEnd = filter?.endDate
-                                        viewModel.setFilter(filter?.copy(startDate = picked, endDate = currentEnd) ?: JournalFilter(startDate = picked))
-                                    }
-                                    showStartPicker = false
-                                }) { Text("OK", color = Color.Black) }
-                            },
-                            dismissButton = { TextButton(onClick = { showStartPicker = false }) { Text("Cancel", color = Color.Black) } }
-                        ) { DatePicker(state = startDatePickerState) }
+                    val textColor = Color.White
+
+                    val inputBackgroundColors = when (currentThemeId) {
+                        "theme_light", "theme_dark" -> Color(0xFF3FBB27)
+                        "theme_blue" -> Color(0xFF2BA7FF)
+                        "theme_gold" -> Color(0xFFFC8600)
+                        else -> Color(0xFF3FBB27)
                     }
 
-                    if (showEndPicker) {
-                        DatePickerDialog(
-                            onDismissRequest = { showEndPicker = false },
-                            confirmButton = {
-                                TextButton(onClick = {
-                                    endDatePickerState.selectedDateMillis?.let {
-                                        val picked = Instant.fromEpochMilliseconds(it)
-                                            .toLocalDateTime(TimeZone.currentSystemDefault()).date
-                                        val currentStart = filter?.startDate ?: picked
-                                        viewModel.setFilter(filter?.copy(startDate = currentStart, endDate = picked) ?: JournalFilter(endDate = picked))
-                                    }
-                                    showEndPicker = false
-                                }) { Text("OK", color = Color.Black) }
-                            },
-                            dismissButton = { TextButton(onClick = { showEndPicker = false }) { Text("Cancel", color = Color.Black) } }
-                        ) { DatePicker(state = endDatePickerState) }
-                    }
-
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedButton(
-                            onClick = { showStartPicker = true },
-                            colors = ButtonDefaults.outlinedButtonColors(containerColor = inputBackgroundColor)
-                        ) { Text(filter?.startDate?.toString() ?: "Start Date", color = textColor) }
-
-                        OutlinedButton(
-                            onClick = { showEndPicker = true },
-                            colors = ButtonDefaults.outlinedButtonColors(containerColor = inputBackgroundColor)
-                        ) { Text(filter?.endDate?.toString() ?: "End Date", color = textColor) }
-                    }
-                }
-
-                Spacer(Modifier.height(16.dp))
-
-                when (val state = uiState) {
-                    is JournalUiState.Loading -> CircularProgressIndicator(
+                    Row(
                         Modifier
-                            .align(Alignment.CenterHorizontally)
-                            .padding(top = 32.dp)
-                    )
-                    is JournalUiState.Empty -> EmptyTripsState(
-                        currentThemeId = currentThemeId ?: "theme_light",
-                        onCreateTrip = { navController.navigate(Screen.CreateTrip.route) }
-                    )
-                    is JournalUiState.Error -> ErrorState(
-                        currentThemeId = currentThemeId ?: "theme_light",
-                        onRetry = { homeViewModel.refreshTrips() }
-                    )
-                    is JournalUiState.Success -> JournalList(
-                        entriesByDate = state.entriesByDate,
-                        onExportDay = viewModel::exportDay,
-                        viewModel = viewModel,
-                        viewModelFavorites = koinInject(),
-                        navController = navController,
-                        themeRepository = themeRepository,
-                        onEditEntry = { entry -> editingEntry = entry }
-                    )
+                            .fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        ThemedChip(
+                            text = "Entry Type",
+                            selected = showEntryType,
+                            onClick = { showEntryType = !showEntryType },
+                            background = inputBackgroundColors
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        ThemedChip(
+                            text = "Trip Category",
+                            selected = showTripCategory,
+                            onClick = { showTripCategory = !showTripCategory },
+                            background = inputBackgroundColors
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        ThemedChip(
+                            text = "Date Range",
+                            selected = showDateRange,
+                            onClick = { showDateRange = !showDateRange },
+                            background = inputBackgroundColors
+                        )
+                    }
+
+                    Spacer(Modifier.height(8.dp))
+
+                    if (showEntryType) {
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            EntryType.values().forEach { type ->
+                                ThemedChip(
+                                    text = type.name,
+                                    selected = filter?.type == type,
+                                    onClick = {
+                                        viewModel.setFilter(
+                                            filter?.copy(type = type) ?: JournalFilter(type = type)
+                                        )
+                                    },
+                                    background = inputBackgroundColor
+                                )
+                            }
+                        }
+                    }
+
+                    if (showTripCategory) {
+                        Spacer(Modifier.height(8.dp))
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+
+                        ) {
+                            TripCategory.values().forEach { cat ->
+                                ThemedChip(
+                                    text = cat.name,
+                                    selected = filter?.tripCategory == cat,
+                                    onClick = {
+                                        viewModel.setFilter(
+                                            filter?.copy(tripCategory = cat) ?: JournalFilter(
+                                                tripCategory = cat
+                                            )
+                                        )
+                                    },
+                                    background = inputBackgroundColor
+                                )
+                            }
+                        }
+                    }
+
+                    if (showDateRange) {
+                        Spacer(Modifier.height(8.dp))
+
+                        val startDatePickerState =
+                            rememberDatePickerState(initialSelectedDateMillis = filter?.startDate?.toEpochMillis())
+                        val endDatePickerState =
+                            rememberDatePickerState(initialSelectedDateMillis = filter?.endDate?.toEpochMillis())
+                        var showStartPicker by remember { mutableStateOf(false) }
+                        var showEndPicker by remember { mutableStateOf(false) }
+
+                        if (showStartPicker) {
+                            DatePickerDialog(
+                                onDismissRequest = { showStartPicker = false },
+                                confirmButton = {
+                                    TextButton(onClick = {
+                                        startDatePickerState.selectedDateMillis?.let {
+                                            val picked = Instant.fromEpochMilliseconds(it)
+                                                .toLocalDateTime(TimeZone.currentSystemDefault()).date
+                                            val currentEnd = filter?.endDate
+                                            viewModel.setFilter(
+                                                filter?.copy(
+                                                    startDate = picked,
+                                                    endDate = currentEnd
+                                                ) ?: JournalFilter(startDate = picked)
+                                            )
+                                        }
+                                        showStartPicker = false
+                                    }) { Text("OK", color = Color.Black) }
+                                },
+                                dismissButton = {
+                                    TextButton(onClick = {
+                                        showStartPicker = false
+                                    }) { Text("Cancel", color = Color.Black) }
+                                }
+                            ) { DatePicker(state = startDatePickerState) }
+                        }
+
+                        if (showEndPicker) {
+                            DatePickerDialog(
+                                onDismissRequest = { showEndPicker = false },
+                                confirmButton = {
+                                    TextButton(onClick = {
+                                        endDatePickerState.selectedDateMillis?.let {
+                                            val picked = Instant.fromEpochMilliseconds(it)
+                                                .toLocalDateTime(TimeZone.currentSystemDefault()).date
+                                            val currentStart = filter?.startDate ?: picked
+                                            viewModel.setFilter(
+                                                filter?.copy(
+                                                    startDate = currentStart,
+                                                    endDate = picked
+                                                ) ?: JournalFilter(endDate = picked)
+                                            )
+                                        }
+                                        showEndPicker = false
+                                    }) { Text("OK", color = Color.Black) }
+                                },
+                                dismissButton = {
+                                    TextButton(onClick = {
+                                        showEndPicker = false
+                                    }) { Text("Cancel", color = Color.Black) }
+                                }
+                            ) { DatePicker(state = endDatePickerState) }
+                        }
+
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedButton(
+                                onClick = { showStartPicker = true },
+                                colors = ButtonDefaults.outlinedButtonColors(containerColor = inputBackgroundColor)
+                            ) {
+                                Text(
+                                    filter?.startDate?.toString() ?: "Start Date",
+                                    color = textColor
+                                )
+                            }
+
+                            OutlinedButton(
+                                onClick = { showEndPicker = true },
+                                colors = ButtonDefaults.outlinedButtonColors(containerColor = inputBackgroundColor)
+                            ) { Text(filter?.endDate?.toString() ?: "End Date", color = textColor) }
+                        }
+                    }
+
+                    Spacer(Modifier.height(16.dp))
+
+                    when (val state = uiState) {
+                        is JournalUiState.Loading -> CircularProgressIndicator(
+                            Modifier
+                                .align(Alignment.CenterHorizontally)
+                                .padding(top = 32.dp)
+                        )
+
+                        is JournalUiState.Empty -> EmptyTripsState(
+                            currentThemeId = currentThemeId ?: "theme_light",
+                            onCreateTrip = { navController.navigate(Screen.CreateTrip.route) }
+                        )
+
+                        is JournalUiState.Error -> ErrorState(
+                            currentThemeId = currentThemeId ?: "theme_light",
+                            onRetry = { homeViewModel.refreshTrips() }
+                        )
+
+                        is JournalUiState.Success -> JournalList(
+                            entriesByDate = state.entriesByDate,
+                            onExportDay = viewModel::exportDay,
+                            viewModel = viewModel,
+                            viewModelFavorites = koinInject(),
+                            navController = navController,
+                            themeRepository = themeRepository,
+                            onEditEntry = { entry -> editingEntry = entry }
+                        )
+                    }
                 }
             }
         }
@@ -666,6 +734,7 @@ fun JournalList(
     onExportDay: (LocalDate) -> Unit,
     viewModel: JournalViewModel,
     viewModelFavorites: FavoritesViewModel = koinInject(),
+    tripRepository: TripRepository = koinInject(),
     navController: NavHostController,
     themeRepository: ThemeRepository,
     onEditEntry: (EntryModel) -> Unit
@@ -715,9 +784,15 @@ fun JournalList(
                     }
 
                     items(entries) { entry ->
+
+                        val tripTitleState = produceState<String?>(initialValue = null, entry.tripId) {
+                            value = tripRepository.getTripById(entry.tripId)?.title
+                        }
+                        val tripTitle = tripTitleState.value ?: ""
+
                         EntryCard(
                             entry = entry,
-                            tripTitle = entry.title ?: "",
+                            tripTitle = tripTitle,
                             currentThemeId = currentThemeId ?: "theme_light",
                             isFavorite = viewModelFavorites.favoriteEntryIds.collectAsState().value.contains(entry.id),
                             onClick = {
@@ -747,3 +822,4 @@ fun JournalList(
         }
     }
 }
+

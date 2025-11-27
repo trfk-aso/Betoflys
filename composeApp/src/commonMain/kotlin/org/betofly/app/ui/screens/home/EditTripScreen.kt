@@ -79,9 +79,11 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.toLocalDateTime
+import org.betofly.app.PlatformLocalImage
 import org.betofly.app.di.ImagePicker
 import org.betofly.app.model.Trip
 import org.betofly.app.model.TripCategory
+import org.betofly.app.repository.ThemeRepository
 import org.betofly.app.viewModel.HomeViewModel
 import org.betofly.app.viewModel.TripDetailsUiState
 import org.betofly.app.viewModel.TripDetailsViewModel
@@ -90,13 +92,14 @@ import org.koin.compose.koinInject
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalTime::class)
 @Composable
 fun EditTripScreen(
     tripId: Long,
     navController: NavHostController,
     viewModel: HomeViewModel = koinInject(),
     tripDetailsViewModel: TripDetailsViewModel = koinInject(),
+    themeRepository: ThemeRepository = koinInject(),
     currentThemeId: String
 ) {
     val tripState by tripDetailsViewModel.uiState.collectAsState()
@@ -111,6 +114,7 @@ fun EditTripScreen(
         return
     }
 
+    // --- State variables ---
     var title by remember { mutableStateOf(trip.title) }
     var startDate by remember { mutableStateOf(trip.startDate) }
     var endDate by remember { mutableStateOf(trip.endDate) }
@@ -128,6 +132,7 @@ fun EditTripScreen(
 
     val scrollState = rememberScrollState()
 
+    // --- Theme-dependent resources ---
     val backgroundRes = when (currentThemeId) {
         "theme_light" -> Res.drawable.bg_light
         "theme_dark" -> Res.drawable.bg_dark
@@ -174,6 +179,7 @@ fun EditTripScreen(
     )
 
     Box(modifier = Modifier.fillMaxSize()) {
+        // --- Background image ---
         Image(
             painter = painterResource(backgroundRes),
             contentDescription = null,
@@ -181,6 +187,7 @@ fun EditTripScreen(
             modifier = Modifier.fillMaxSize()
         )
 
+        // --- Scaffold with TopBar ---
         Scaffold(
             topBar = {
                 TopAppBar(
@@ -225,6 +232,7 @@ fun EditTripScreen(
                     .verticalScroll(scrollState),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                // --- Title ---
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
@@ -238,20 +246,15 @@ fun EditTripScreen(
                     colors = fieldColors
                 )
 
-                ImagePicker { newCoverImage = it }
+                // --- Image Picker ---
+                ImagePicker(
+                    onImagePicked = { pickedImageUri ->
+                        newCoverImage = pickedImageUri
+                    },
+                    themeRepository = themeRepository
+                )
 
-                newCoverImage?.let { uri ->
-                    KamelImage(
-                        resource = asyncPainterResource(data = uri),
-                        contentDescription = "Cover image",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(180.dp)
-                            .clip(RoundedCornerShape(12.dp)),
-                        contentScale = ContentScale.Crop
-                    )
-                }
-
+                // --- Date Buttons ---
                 OutlinedButton(
                     onClick = { showStartPicker = true },
                     modifier = Modifier
@@ -266,6 +269,7 @@ fun EditTripScreen(
                         .background(tabBackgroundColor, RoundedCornerShape(8.dp))
                 ) { Text("End: $endDate", color = Color.White, fontWeight = FontWeight.Bold) }
 
+                // --- Category dropdown ---
                 ExposedDropdownMenuBox(
                     expanded = expanded,
                     onExpandedChange = { expanded = !expanded },
@@ -298,6 +302,7 @@ fun EditTripScreen(
                     }
                 }
 
+                // --- Tags ---
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -340,6 +345,7 @@ fun EditTripScreen(
                     }
                 }
 
+                // --- Note ---
                 OutlinedTextField(
                     value = note,
                     onValueChange = { note = it },
@@ -357,6 +363,7 @@ fun EditTripScreen(
 
                 Spacer(Modifier.height(16.dp))
 
+                // --- Save Button ---
                 Button(
                     onClick = {
                         val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
@@ -384,6 +391,41 @@ fun EditTripScreen(
                     Text("Save", fontWeight = FontWeight.Bold)
                 }
             }
+
+            if (showStartPicker) {
+                DatePickerDialog(
+                    onDismissRequest = { showStartPicker = false },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            startDatePickerState.selectedDateMillis?.let {
+                                startDate = kotlinx.datetime.Instant.fromEpochMilliseconds(it)
+                                    .toLocalDateTime(TimeZone.currentSystemDefault())
+                                    .date
+                            }
+                            showStartPicker = false
+                        }) { Text("OK") }
+                    },
+                    dismissButton = { TextButton(onClick = { showStartPicker = false }) { Text("Cancel") } }
+                ) { DatePicker(state = startDatePickerState) }
+            }
+
+            if (showEndPicker) {
+                DatePickerDialog(
+                    onDismissRequest = { showEndPicker = false },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            endDatePickerState.selectedDateMillis?.let {
+                                endDate = kotlinx.datetime.Instant.fromEpochMilliseconds(it)
+                                    .toLocalDateTime(TimeZone.currentSystemDefault())
+                                    .date
+                            }
+                            showEndPicker = false
+                        }) { Text("OK") }
+                    },
+                    dismissButton = { TextButton(onClick = { showEndPicker = false }) { Text("Cancel") } }
+                ) { DatePicker(state = endDatePickerState) }
+            }
         }
     }
 }
+

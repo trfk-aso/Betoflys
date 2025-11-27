@@ -41,6 +41,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -121,337 +122,393 @@ fun StatisticsScreen(
         "theme_gold" -> Color(0xFF673001)
         else -> Color(0xFF00110D)
     }
+    Box(modifier = Modifier.fillMaxSize()) {
 
-    Scaffold(
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = {
-            TopAppBar(
-                title = {
-                    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        Text(
-                            "Statistics",
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 24.sp
-                        )
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        val backIconRes = when (currentThemeId) {
-                            "theme_light" -> Res.drawable.ic_back_light
-                            "theme_dark" -> Res.drawable.ic_back_dark
-                            "theme_blue" -> Res.drawable.ic_back_blue
-                            "theme_gold" -> Res.drawable.ic_back_gold
-                            else -> Res.drawable.ic_back_light
-                        }
-                        Image(
-                            painter = painterResource(backIconRes),
-                            contentDescription = "Back",
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { navController.navigate(Screen.Settings.route) }) {
-                        val settingsIconRes = when (currentThemeId) {
-                            "theme_light" -> Res.drawable.ic_settings_light
-                            "theme_dark" -> Res.drawable.ic_settings_dark
-                            "theme_blue" -> Res.drawable.ic_settings_blue
-                            "theme_gold" -> Res.drawable.ic_settings_gold
-                            else -> Res.drawable.ic_settings_light
-                        }
-                        Image(
-                            painter = painterResource(settingsIconRes),
-                            contentDescription = "Settings",
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = topBarBackgroundColor
-                )
-            )
-        },
-        modifier = Modifier.shadow(0.dp),
-        bottomBar = {
-            QuickAccessRow(
-                currentThemeId = currentThemeId ?: "theme_light",
-                onNewTrip = { navController.navigate(Screen.Home.route) },
-                onJournal = { navController.navigate(Screen.Journal.route) },
-                onSearch = { navController.navigate(Screen.Search.route) },
-                onFavorites = { navController.navigate(Screen.Favorites.route) },
-                onStatistics = { navController.navigate(Screen.Statistics.route) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .shadow(4.dp)
-            )
-        }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
+        key(currentThemeId) {
             Image(
                 painter = painterResource(backgroundRes),
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
             )
-
-            LazyColumn(
+        }
+        Scaffold(
+            containerColor = Color.Transparent,
+            contentWindowInsets = WindowInsets(0, 0, 0, 0),
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            Text(
+                                "Statistics",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 24.sp
+                            )
+                        }
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            val backIconRes = when (currentThemeId) {
+                                "theme_light" -> Res.drawable.ic_back_light
+                                "theme_dark" -> Res.drawable.ic_back_dark
+                                "theme_blue" -> Res.drawable.ic_back_blue
+                                "theme_gold" -> Res.drawable.ic_back_gold
+                                else -> Res.drawable.ic_back_light
+                            }
+                            Image(
+                                painter = painterResource(backIconRes),
+                                contentDescription = "Back",
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = { navController.navigate(Screen.Settings.route) }) {
+                            val settingsIconRes = when (currentThemeId) {
+                                "theme_light" -> Res.drawable.ic_settings_light
+                                "theme_dark" -> Res.drawable.ic_settings_dark
+                                "theme_blue" -> Res.drawable.ic_settings_blue
+                                "theme_gold" -> Res.drawable.ic_settings_gold
+                                else -> Res.drawable.ic_settings_light
+                            }
+                            Image(
+                                painter = painterResource(settingsIconRes),
+                                contentDescription = "Settings",
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent
+                    )
+                )
+            },
+            modifier = Modifier.shadow(0.dp),
+            bottomBar = {
+                QuickAccessRow(
+                    currentThemeId = currentThemeId ?: "theme_light",
+                    onNewTrip = { navController.navigate(Screen.Home.route) },
+                    onJournal = { navController.navigate(Screen.Journal.route) },
+                    onSearch = { navController.navigate(Screen.Search.route) },
+                    onFavorites = { navController.navigate(Screen.Favorites.route) },
+                    onStatistics = { navController.navigate(Screen.Statistics.route) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .shadow(4.dp)
+                )
+            }
+        ) { paddingValues ->
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                    .padding(paddingValues)
             ) {
-                item {
-                    val periodBackgroundColor = when (currentThemeId) {
-                        "theme_light" -> Color(0xFF00110D)
-                        "theme_dark" -> Color(0xFF00110D)
-                        "theme_blue" -> Color(0xFF060F22)
-                        "theme_gold" -> Color(0xFF673001)
-                        else -> Color(0xFF00110D)
+                Image(
+                    painter = painterResource(backgroundRes),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    item {
+                        val periodBackgroundColor = when (currentThemeId) {
+                            "theme_light" -> Color(0xFF00110D)
+                            "theme_dark" -> Color(0xFF00110D)
+                            "theme_blue" -> Color(0xFF060F22)
+                            "theme_gold" -> Color(0xFF673001)
+                            else -> Color(0xFF00110D)
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(periodBackgroundColor, shape = RoundedCornerShape(8.dp))
+                                .padding(vertical = 8.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceEvenly
+                            ) {
+                                StatisticsPeriod.values().forEach { p ->
+                                    val selected = p == period
+                                    TextButton(
+                                        onClick = { viewModel.setPeriod(p) },
+                                        colors = ButtonDefaults.textButtonColors(
+                                            containerColor = Color.Transparent,
+                                            contentColor = if (selected) MaterialTheme.colorScheme.primary
+                                            else MaterialTheme.colorScheme.onSurface
+                                        )
+                                    ) {
+                                        Text(
+                                            text = p.name.replace("_", " "),
+                                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                                            color = Color.White
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        Spacer(Modifier.height(16.dp))
                     }
 
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(periodBackgroundColor, shape = RoundedCornerShape(8.dp))
-                            .padding(vertical = 8.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly
-                        ) {
-                            StatisticsPeriod.values().forEach { p ->
-                                val selected = p == period
-                                TextButton(
-                                    onClick = { viewModel.setPeriod(p) },
-                                    colors = ButtonDefaults.textButtonColors(
-                                        containerColor = Color.Transparent,
-                                        contentColor = if (selected) MaterialTheme.colorScheme.primary
-                                        else MaterialTheme.colorScheme.onSurface
-                                    )
+                    item {
+                        when (uiState) {
+                            is StatisticsUiState.Loading -> {
+                                CircularProgressIndicator(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .wrapContentWidth(Alignment.CenterHorizontally),
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+
+                            is StatisticsUiState.NoData -> EmptyTripsState(
+                                currentThemeId = currentThemeId ?: "theme_light",
+                                onCreateTrip = { navController.navigate(Screen.CreateTrip.route) }
+                            )
+
+                            is StatisticsUiState.Error -> {
+                                Text(
+                                    "Error: ${(uiState as StatisticsUiState.Error).message}",
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .wrapContentWidth(Alignment.CenterHorizontally),
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            }
+
+                            is StatisticsUiState.Success -> {
+                                val data = uiState as StatisticsUiState.Success
+                                Column(
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-                                    Text(
-                                        text = p.name.replace("_", " "),
-                                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                                        color = Color.White
+                                    MetricItem(
+                                        "Trips",
+                                        data.tripsCount,
+                                        currentThemeId ?: "theme_light"
+                                    )
+                                    MetricItem(
+                                        "Total Days",
+                                        data.totalDays,
+                                        currentThemeId ?: "theme_light"
+                                    )
+                                    MetricItem(
+                                        "Entries",
+                                        data.entriesCount,
+                                        currentThemeId ?: "theme_light"
+                                    )
+                                    MetricItem(
+                                        "Photos",
+                                        data.photosCount,
+                                        currentThemeId ?: "theme_light"
+                                    )
+                                    MetricItem(
+                                        "Places",
+                                        data.placesCount,
+                                        currentThemeId ?: "theme_light"
+                                    )
+                                    MetricItem(
+                                        "Avg Trip Progress",
+                                        "${(data.avgTripProgress * 100).toInt()}%",
+                                        currentThemeId ?: "theme_light"
                                     )
                                 }
                             }
                         }
                     }
 
-                    Spacer(Modifier.height(16.dp))
-                }
+                    item {
+                        Spacer(Modifier.height(16.dp))
 
-                item {
-                    when (uiState) {
-                        is StatisticsUiState.Loading -> {
-                            CircularProgressIndicator(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .wrapContentWidth(Alignment.CenterHorizontally),
-                                color = MaterialTheme.colorScheme.primary
-                            )
+                        val backgroundColor = when (currentThemeId) {
+                            "theme_light" -> Color(0xFF00110D)
+                            "theme_dark" -> Color(0xFF00110D)
+                            "theme_blue" -> Color(0xFF060F22)
+                            "theme_gold" -> Color(0xFF673001)
+                            else -> Color(0xFF00110D)
                         }
-                        is StatisticsUiState.NoData -> EmptyTripsState(
-                            currentThemeId = currentThemeId ?: "theme_light",
-                            onCreateTrip = { navController.navigate(Screen.CreateTrip.route) }
-                        )
 
-                        is StatisticsUiState.Error -> {
-                            Text(
-                                "Error: ${(uiState as StatisticsUiState.Error).message}",
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .wrapContentWidth(Alignment.CenterHorizontally),
-                                color = MaterialTheme.colorScheme.error
-                            )
-                        }
-                        is StatisticsUiState.Success -> {
-                            val data = uiState as StatisticsUiState.Success
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(backgroundColor, shape = RoundedCornerShape(8.dp))
+                                .padding(16.dp)
+                        ) {
                             Column(
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                MetricItem("Trips", data.tripsCount, currentThemeId ?: "theme_light")
-                                MetricItem("Total Days", data.totalDays, currentThemeId ?: "theme_light")
-                                MetricItem("Entries", data.entriesCount, currentThemeId ?: "theme_light")
-                                MetricItem("Photos", data.photosCount, currentThemeId ?: "theme_light")
-                                MetricItem("Places", data.placesCount, currentThemeId ?: "theme_light")
-                                MetricItem("Avg Trip Progress", "${(data.avgTripProgress * 100).toInt()}%", currentThemeId ?: "theme_light")
-                            }
-                        }
-                    }
-                }
+                                if (allTrips.isNotEmpty()) {
+                                    var expanded by remember { mutableStateOf(false) }
 
-                item {
-                    Spacer(Modifier.height(16.dp))
+                                    Box {
+                                        Button(
+                                            onClick = { expanded = true },
+                                            colors = ButtonDefaults.buttonColors(
+                                                containerColor = MaterialTheme.colorScheme.surface.copy(
+                                                    alpha = 0.1f
+                                                ),
+                                                contentColor = Color.White
+                                            )
+                                        ) {
+                                            Text(
+                                                text = selectedTripId?.let { id ->
+                                                    allTrips.find { it.id == id }?.title
+                                                } ?: "Select Trip",
+                                                color = Color.White
+                                            )
+                                        }
 
-                    val backgroundColor = when (currentThemeId) {
-                        "theme_light" -> Color(0xFF00110D)
-                        "theme_dark" -> Color(0xFF00110D)
-                        "theme_blue" -> Color(0xFF060F22)
-                        "theme_gold" -> Color(0xFF673001)
-                        else -> Color(0xFF00110D)
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(backgroundColor, shape = RoundedCornerShape(8.dp))
-                            .padding(16.dp)
-                    ) {
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            if (allTrips.isNotEmpty()) {
-                                var expanded by remember { mutableStateOf(false) }
-
-                                Box {
-                                    Button(
-                                        onClick = { expanded = true },
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.1f),
-                                            contentColor = Color.White
-                                        )
-                                    ) {
-                                        Text(
-                                            text = selectedTripId?.let { id ->
-                                                allTrips.find { it.id == id }?.title
-                                            } ?: "Select Trip",
-                                            color = Color.White
-                                        )
+                                        DropdownMenu(
+                                            expanded = expanded,
+                                            onDismissRequest = { expanded = false },
+                                            modifier = Modifier
+                                                .background(
+                                                    color = backgroundColor,
+                                                    shape = RoundedCornerShape(8.dp)
+                                                )
+                                        ) {
+                                            allTrips.forEach { trip ->
+                                                DropdownMenuItem(
+                                                    text = {
+                                                        Text(
+                                                            trip.title,
+                                                            color = Color.White
+                                                        )
+                                                    },
+                                                    onClick = {
+                                                        viewModel.selectTrip(trip.id)
+                                                        expanded = false
+                                                    }
+                                                )
+                                            }
+                                        }
                                     }
 
-                                    DropdownMenu(
-                                        expanded = expanded,
-                                        onDismissRequest = { expanded = false },
-                                        modifier = Modifier
-                                            .background(
-                                                color = backgroundColor,
-                                                shape = RoundedCornerShape(8.dp)
-                                            )
-                                    ) {
-                                        allTrips.forEach { trip ->
-                                            DropdownMenuItem(
-                                                text = { Text(trip.title, color = Color.White) },
-                                                onClick = {
-                                                    viewModel.selectTrip(trip.id)
-                                                    expanded = false
-                                                }
+                                    selectedTripId?.let { id ->
+                                        val tripTitle = allTrips.find { it.id == id }?.title ?: ""
+                                        TextButton(
+                                            onClick = {
+                                                homeViewModel.onTripSelected(id)
+                                                navController.navigate(Screen.TripDetails.route)
+                                            }
+                                        ) {
+                                            Text(
+                                                "View Trip: $tripTitle",
+                                                style = MaterialTheme.typography.titleMedium,
+                                                color = Color.White
                                             )
                                         }
                                     }
                                 }
+                            }
+                        }
+                    }
 
-                                selectedTripId?.let { id ->
-                                    val tripTitle = allTrips.find { it.id == id }?.title ?: ""
-                                    TextButton(
-                                        onClick = {
-                                            homeViewModel.onTripSelected(id)
-                                            navController.navigate(Screen.TripDetails.route)
-                                        }
-                                    ) {
-                                        Text(
-                                            "View Trip: $tripTitle",
-                                            style = MaterialTheme.typography.titleMedium,
-                                            color = Color.White
-                                        )
+                    item {
+                        Spacer(Modifier.height(16.dp))
+
+                        val backgroundColor = when (currentThemeId) {
+                            "theme_light" -> Color(0xFF00110D)
+                            "theme_dark" -> Color(0xFF00110D)
+                            "theme_blue" -> Color(0xFF060F22)
+                            "theme_gold" -> Color(0xFF673001)
+                            else -> Color(0xFF00110D)
+                        }
+
+                        tripStats?.toUiModel()?.let { t ->
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(backgroundColor, shape = RoundedCornerShape(8.dp))
+                                    .padding(16.dp)
+                            ) {
+                                Column(
+                                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(
+                                        "Trip: ${t.tripTitle}",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = Color.White
+                                    )
+                                    MetricItem(
+                                        "Route Length (km)",
+                                        t.routeLength,
+                                        currentThemeId ?: "theme_light"
+                                    )
+                                    MetricItem(
+                                        "Recording Duration",
+                                        t.recordingDuration,
+                                        currentThemeId ?: "theme_light"
+                                    )
+                                    MetricItem(
+                                        "Days Covered",
+                                        t.daysCovered,
+                                        currentThemeId ?: "theme_light"
+                                    )
+                                    Spacer(Modifier.height(16.dp))
+                                }
+                            }
+                        }
+                    }
+
+                    item {
+                        val backgroundColor = when (currentThemeId) {
+                            "theme_light" -> Color(0xFF00110D)
+                            "theme_dark" -> Color(0xFF00110D)
+                            "theme_blue" -> Color(0xFF060F22)
+                            "theme_gold" -> Color(0xFF673001)
+                            else -> Color(0xFF00110D)
+                        }
+
+                        graphData?.let { g ->
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(backgroundColor, shape = RoundedCornerShape(8.dp))
+                                    .padding(16.dp)
+                            ) {
+                                Column(
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Text(
+                                        "Statistics Chart",
+                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = Color.White
+                                    )
+
+                                    val combinedData = linkedMapOf<String, Int>()
+                                    g.entriesPerDay.forEach { (date, count) ->
+                                        combinedData["Day ${date.dayOfMonth}"] = count
                                     }
+                                    g.topTags.forEach { (tag, count) ->
+                                        combinedData["Tag: $tag"] = count
+                                    }
+                                    g.topCategories.forEach { (cat, count) ->
+                                        combinedData["Cat: $cat"] = count
+                                    }
+
+                                    UnifiedBarChart(
+                                        dataMap = combinedData,
+                                        modifier = Modifier.fillMaxWidth(),
+                                        textColor = Color.White
+                                    )
                                 }
                             }
                         }
                     }
-                }
 
-                item {
-                    Spacer(Modifier.height(16.dp))
-
-                    val backgroundColor = when (currentThemeId) {
-                        "theme_light" -> Color(0xFF00110D)
-                        "theme_dark" -> Color(0xFF00110D)
-                        "theme_blue" -> Color(0xFF060F22)
-                        "theme_gold" -> Color(0xFF673001)
-                        else -> Color(0xFF00110D)
+                    item {
+                        Spacer(Modifier.height(16.dp))
                     }
-
-                    tripStats?.toUiModel()?.let { t ->
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(backgroundColor, shape = RoundedCornerShape(8.dp))
-                                .padding(16.dp)
-                        ) {
-                            Column(
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(
-                                    "Trip: ${t.tripTitle}",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = Color.White
-                                )
-                                MetricItem("Route Length (km)", t.routeLength, currentThemeId ?: "theme_light")
-                                MetricItem("Recording Duration", t.recordingDuration, currentThemeId ?: "theme_light")
-                                MetricItem("Days Covered", t.daysCovered, currentThemeId ?: "theme_light")
-                                Spacer(Modifier.height(16.dp))
-                            }
-                        }
-                    }
-                }
-
-                item {
-                    val backgroundColor = when (currentThemeId) {
-                        "theme_light" -> Color(0xFF00110D)
-                        "theme_dark" -> Color(0xFF00110D)
-                        "theme_blue" -> Color(0xFF060F22)
-                        "theme_gold" -> Color(0xFF673001)
-                        else -> Color(0xFF00110D)
-                    }
-
-                    graphData?.let { g ->
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(backgroundColor, shape = RoundedCornerShape(8.dp))
-                                .padding(16.dp)
-                        ) {
-                            Column(
-                                verticalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                Text(
-                                    "Statistics Chart",
-                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                    color = Color.White
-                                )
-
-                                val combinedData = linkedMapOf<String, Int>()
-                                g.entriesPerDay.forEach { (date, count) ->
-                                    combinedData["Day ${date.dayOfMonth}"] = count
-                                }
-                                g.topTags.forEach { (tag, count) ->
-                                    combinedData["Tag: $tag"] = count
-                                }
-                                g.topCategories.forEach { (cat, count) ->
-                                    combinedData["Cat: $cat"] = count
-                                }
-
-                                UnifiedBarChart(
-                                    dataMap = combinedData,
-                                    modifier = Modifier.fillMaxWidth(),
-                                    textColor = Color.White
-                                )
-                            }
-                        }
-                    }
-                }
-
-                item {
-                    Spacer(Modifier.height(16.dp))
                 }
             }
         }

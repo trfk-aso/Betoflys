@@ -76,6 +76,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -117,8 +118,10 @@ import org.betofly.app.model.RoutePoint
 import org.betofly.app.model.Trip
 import org.betofly.app.model.TripUiModel
 import org.betofly.app.repository.ThemeRepository
+import org.betofly.app.repository.TripRepository
 import org.betofly.app.ui.screens.Screen
 import org.betofly.app.ui.screens.favorites.EntryCard
+import org.betofly.app.ui.screens.favorites.EntryCardForDetails
 import org.betofly.app.viewModel.FavoritesViewModel
 import org.betofly.app.viewModel.HomeViewModel
 import org.betofly.app.viewModel.RecordingViewModel
@@ -476,6 +479,7 @@ fun EntriesTab(
     entries: List<EntryModel>,
     navController: NavHostController,
     currentThemeId: String,
+    tripRepository: TripRepository = koinInject(),
     modifier: Modifier = Modifier
 ) {
     var selectedImage by remember { mutableStateOf<String?>(null) }
@@ -493,16 +497,20 @@ fun EntriesTab(
             val favoriteIds by favoritesViewModel.favoriteEntryIds.collectAsState()
             val isFavorite = favoriteIds.contains(entry.id)
 
+            val tripTitleState = produceState<String?>(initialValue = null, entry.tripId) {
+                value = tripRepository.getTripById(entry.tripId)?.title
+            }
+            val tripTitle = tripTitleState.value ?: ""
+
             Box(
                 modifier = Modifier
                     .width(180.dp)
                     .wrapContentHeight()
-                    .width(180.dp)
                     .height(220.dp)
             ) {
-                EntryCard(
+                EntryCardForDetails(
                     entry = entry,
-                    tripTitle = entry.title ?: "",
+                    tripTitle = tripTitle,
                     isFavorite = isFavorite,
                     currentThemeId = currentThemeId,
                     onClick = {

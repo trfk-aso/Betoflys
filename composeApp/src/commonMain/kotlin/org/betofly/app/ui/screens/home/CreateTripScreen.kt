@@ -89,6 +89,7 @@ import betofly.composeapp.generated.resources.ic_back_light
 import betofly.composeapp.generated.resources.ic_photo_blue
 import betofly.composeapp.generated.resources.ic_photo_dark
 import betofly.composeapp.generated.resources.ic_photo_gold
+import org.betofly.app.repository.ThemeRepository
 import org.jetbrains.compose.resources.painterResource
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -96,6 +97,7 @@ import org.jetbrains.compose.resources.painterResource
 fun CreateTripScreen(
     navController: NavHostController,
     viewModel: HomeViewModel = koinInject(),
+    themeRepository: ThemeRepository = koinInject(),
     currentThemeId: String
 ) {
     var title by remember { mutableStateOf("") }
@@ -277,7 +279,12 @@ fun CreateTripScreen(
                     shape = RoundedCornerShape(12.dp)
                 )
 
-                ImagePicker { coverImageUri = it }
+                ImagePicker(
+                    onImagePicked = { pickedImageUri ->
+                        coverImageUri = pickedImageUri
+                    },
+                    themeRepository = themeRepository
+                )
 
                 OutlinedButton(
                     onClick = { showStartPicker = true },

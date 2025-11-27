@@ -88,33 +88,31 @@ fun HomeScreen(
         else -> Res.drawable.bg_light
     }
 
-    val topBarBackgroundColor = when (currentThemeId) {
-        "theme_light" -> Color(0xFF00110D)
-        "theme_dark" -> Color(0xFF00110D)
-        "theme_blue" -> Color(0xFF060F22)
-        "theme_gold" -> Color(0xFF673001)
-        else -> Color(0xFF00110D)
-    }
+    Box(modifier = Modifier.fillMaxSize()) {
 
-    val tabBackgroundColor = when (currentThemeId) {
-        "theme_light" -> Color(0xFF003322)
-        "theme_dark" -> Color(0xFF003322)
-        "theme_blue" -> Color(0xFF0A1A3D)
-        "theme_gold" -> Color(0xFF814011)
-        else -> Color(0xFF003322)
-    }
+        key(currentThemeId) {
+            Image(
+                painter = painterResource(backgroundRes),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        }
 
-    Scaffold(
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = {
-            Column {
+        Scaffold(
+            contentWindowInsets = WindowInsets(0, 0, 0, 0),
+            containerColor = Color.Transparent,
+            topBar = {
                 TopAppBar(
                     title = {
-                        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        Box(
+                            Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.Center
+                        ) {
                             Image(
                                 painter = painterResource(Res.drawable.ic_title),
                                 contentDescription = null,
-                                modifier = Modifier.size(100.dp)
+                                modifier = Modifier.size(150.dp)
                             )
                         }
                     },
@@ -151,75 +149,69 @@ fun HomeScreen(
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = topBarBackgroundColor
+                        containerColor = Color.Transparent
                     )
                 )
-            }
-        },
-        bottomBar = {
-            QuickAccessRow(
-                currentThemeId = currentThemeId ?: "theme_light",
-                onNewTrip = { navController.navigate(Screen.CreateTrip.route) },
-                onJournal = { navController.navigate(Screen.Journal.route) },
-                onSearch = { navController.navigate(Screen.Search.route) },
-                onFavorites = { navController.navigate(Screen.Favorites.route) },
-                onStatistics = { navController.navigate(Screen.Statistics.route) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .shadow(4.dp)
-            )
-        }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            key(currentThemeId) {
-                Image(
-                    painter = painterResource(backgroundRes),
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-            }
-
-            when (uiState) {
-                is HomeUiState.Loading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
-                is HomeUiState.Empty -> EmptyTripsState(
+            },
+            bottomBar = {
+                QuickAccessRow(
                     currentThemeId = currentThemeId ?: "theme_light",
-                    onCreateTrip = { navController.navigate(Screen.CreateTrip.route) }
+                    onNewTrip = { navController.navigate(Screen.CreateTrip.route) },
+                    onJournal = { navController.navigate(Screen.Journal.route) },
+                    onSearch = { navController.navigate(Screen.Search.route) },
+                    onFavorites = { navController.navigate(Screen.Favorites.route) },
+                    onStatistics = { navController.navigate(Screen.Statistics.route) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .shadow(4.dp)
                 )
-                is HomeUiState.Error -> {
-                    val error = uiState as HomeUiState.Error
-                    ErrorState(
-                        currentThemeId = currentThemeId ?: "theme_light",
-                        onRetry = { viewModel.refreshTrips() }
-                    )
-                }
-                is HomeUiState.Success -> {
-                    val state = uiState as HomeUiState.Success
+            }
+        ) { paddingValues ->
 
-                    HomeContent(
-                        trips = state.trips,
-                        recentlyEdited = state.recentlyEdited,
-                        recentlyExported = state.recentlyExported,
-                        navController = navController,
-                        selectedCategory = selectedCategory,
-                        onCategorySelected = { category -> viewModel.onCategorySelected(category) },
-                        onTripClick = { tripId ->
-                            viewModel.onTripSelected(tripId)
-                            navController.navigate(Screen.TripDetails.route)
-                        },
-                        onEdit = { tripUi ->
-                            viewModel.onTripSelected(tripUi.trip.id)
-                            navController.navigate(Screen.Edit.route)
-                        },
-                        onExport = { tripUi -> viewModel.exportTrip(tripUi.trip.id) },
-                        onFavorite = { tripUi -> viewModel.toggleFavorite(tripUi.trip.id) },
-                        onDelete = { tripUi -> viewModel.deleteTrip(tripUi.trip.id) },
-                        currentThemeId = currentThemeId ?: "theme_light"
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                when (uiState) {
+                    is HomeUiState.Loading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
+                    is HomeUiState.Empty -> EmptyTripsState(
+                        currentThemeId = currentThemeId ?: "theme_light",
+                        onCreateTrip = { navController.navigate(Screen.CreateTrip.route) }
                     )
+                    is HomeUiState.Error -> {
+                        val error = uiState as HomeUiState.Error
+                        ErrorState(
+                            currentThemeId = currentThemeId ?: "theme_light",
+                            onRetry = { viewModel.refreshTrips() }
+                        )
+                    }
+                    is HomeUiState.Success -> {
+                        val state = uiState as HomeUiState.Success
+
+                        HomeContent(
+                            trips = state.trips,
+                            recentlyEdited = state.recentlyEdited,
+                            recentlyExported = state.recentlyExported,
+                            navController = navController,
+                            selectedCategory = selectedCategory,
+                            onCategorySelected = { category -> viewModel.onCategorySelected(category) },
+                            onTripClick = { tripId ->
+                                viewModel.onTripSelected(tripId)
+                                navController.navigate(Screen.TripDetails.route)
+                            },
+                            onEdit = { tripUi ->
+                                viewModel.onTripSelected(tripUi.trip.id)
+                                navController.navigate(Screen.Edit.route)
+                            },
+                            onExport = { tripUi ->
+                                viewModel.exportSingleTrip(tripUi.trip.id)
+                            },
+                            onFavorite = { tripUi -> viewModel.toggleFavorite(tripUi.trip.id) },
+                            onDelete = { tripUi -> viewModel.deleteTrip(tripUi.trip.id) },
+                            currentThemeId = currentThemeId ?: "theme_light"
+                        )
+                    }
                 }
             }
         }

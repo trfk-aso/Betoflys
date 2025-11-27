@@ -4,7 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import backup.BackupManager
 import backup.BackupStorage
-import io.ktor.http.ContentType.Application.Json
+import backup.DataImporter
+import export.PdfSharer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,9 +13,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
 import org.betofly.app.model.EntryModel
+import org.betofly.app.data.Trip as DataTrip
+import org.betofly.app.model.Trip as ModelTrip
 import org.betofly.app.model.Theme
-import org.betofly.app.model.Trip
+import org.betofly.app.model.TripCategory
 import org.betofly.app.repository.BillingRepository
 import org.betofly.app.repository.EntryRepository
 import org.betofly.app.repository.PurchaseResult
@@ -51,7 +57,6 @@ class SettingsViewModel(
     fun selectTheme(theme: Theme) {
         viewModelScope.launch {
             if (theme.type == "paid" && !theme.isPurchased) {
-                // запускаем покупку
                 val result = billingRepository.purchaseTheme(theme.id)
                 when (result) {
                     is PurchaseResult.Success -> {
@@ -63,7 +68,6 @@ class SettingsViewModel(
                     else -> Unit
                 }
             } else {
-                // просто меняем
                 themeRepository.setCurrentTheme(theme.id)
                 _uiState.update { it.copy(currentThemeId = theme.id) }
             }
@@ -96,11 +100,15 @@ class SettingsViewModel(
                 val allEntries = trips.flatMap { entryRepository.getEntriesForTrip(it.id) }
                 println("exportAll: fetched ${allEntries.size} entries")
 
-                val backupBytes = BackupManager.exportAll(trips, allEntries)
-                println("exportAll: backup created, size=${backupBytes.size} bytes")
+                val pdfBytes = BackupManager.exportAll(trips, allEntries)
+                println("exportAll: PDF created, size=${pdfBytes.size} bytes")
 
-                backupStorage.saveBackup(backupBytes)
+                backupStorage.saveBackup(pdfBytes)
                 println("exportAll: backup saved successfully")
+
+                withContext(Dispatchers.Main) {
+                    PdfSharer.share(pdfBytes, "full_export.pdf")
+                }
 
             } catch (e: Exception) {
                 println("exportAll: failed with exception: ${e.message}")
@@ -113,30 +121,33 @@ class SettingsViewModel(
     }
 
     fun importZip() {
+        val importer = DataImporter()
+
+        _uiState.update { it.copy(isImporting = true) }
+
+        importer.openImportDialog { dataTrips, entries ->
+            onImportedData(
+                trips = dataTrips.map { it.toModel() },
+                entries = entries
+            )
+        }
+    }
+
+    private fun onImportedData(
+        trips: List<ModelTrip>,
+        entries: List<EntryModel>
+    ) {
         viewModelScope.launch(Dispatchers.IO) {
-            _uiState.update { it.copy(isImporting = true) }
-            println("importZip: started")
             try {
-                val backupBytes = backupStorage.loadBackup()
-                if (backupBytes == null) {
-                    println("importZip: no backup found")
-                    return@launch
-                }
-                println("importZip: loaded backup, size=${backupBytes.size} bytes")
-
-                val (trips, entries) = BackupManager.importAll(backupBytes)
-                println("importZip: parsed backup: ${trips.size} trips, ${entries.size} entries")
-
                 trips.forEach { tripRepository.insertTrip(it) }
                 entries.forEach { entryRepository.insertEntry(it) }
-                println("importZip: inserted trips and entries")
+
+                println("IMPORT: added ${trips.size} trips and ${entries.size} entries")
 
             } catch (e: Exception) {
-                println("importZip: failed with exception: ${e.message}")
-                e.printStackTrace()
+                println("IMPORT FAILED: ${e.message}")
             } finally {
                 _uiState.update { it.copy(isImporting = false) }
-                println("importZip: finished")
             }
         }
     }
@@ -176,6 +187,32 @@ data class SettingsUiState(
     val isImporting: Boolean = false
 )
 
+fun DataTrip.toModel(): ModelTrip {
+    return ModelTrip(
+        id = id,
+        title = title,
+
+        startDate = LocalDate.parse(start_date),
+        endDate = LocalDate.parse(end_date),
+
+        category = TripCategory.valueOf(category),
+
+        coverImageId = cover_image_id,
+        description = description,
+
+        tags = tags?.split(",")?.map { it.trim() }.orEmpty(),
+
+        createdAt = LocalDateTime.parse(created_at),
+        updatedAt = LocalDateTime.parse(updated_at),
+
+        lastExportedAt = last_exported_at?.let { LocalDateTime.parse(it) },
+
+        progress = (progress ?: 0.0).toFloat(),
+
+        duration = duration ?: 0L
+    )
+}
+
 
 //class SettingsViewModel(
 //    private val settingsRepository: SettingsRepository,
@@ -183,14 +220,14 @@ data class SettingsUiState(
 //    private val entryRepository: EntryRepository,
 //    private val backupStorage: BackupStorage,
 //    private val themeRepository: ThemeRepository
-//) : ViewModel() { // убрали BillingRepository
+//) : ViewModel() {
 //
 //    private val _uiState = MutableStateFlow(SettingsUiState())
 //    val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 //
 //    init {
 //        viewModelScope.launch {
-//            themeRepository.initializeThemes() // делаем все темы бесплатными
+//            themeRepository.initializeThemes()
 //            refreshThemes()
 //        }
 //    }
@@ -204,7 +241,6 @@ data class SettingsUiState(
 //
 //    fun selectTheme(theme: Theme) {
 //        viewModelScope.launch {
-//            // полностью убираем логику покупки
 //            themeRepository.setCurrentTheme(theme.id)
 //            _uiState.update { it.copy(currentThemeId = theme.id) }
 //        }

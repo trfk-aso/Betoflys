@@ -356,10 +356,13 @@ fun RecordingScreen(
                             }
 
                             if (showPhotoPicker) {
-                                ImagePicker { uri ->
-                                    viewModel.addPhotoEntry("Photo", uri.toString())
-                                    showPhotoPicker = false
-                                }
+                                ImagePicker(
+                                    onImagePicked = { uri ->
+                                        viewModel.addPhotoEntry("Photo", uri.toString())
+                                        showPhotoPicker = false
+                                    },
+                                    themeRepository = themeRepository
+                                )
                             }
                         }
 
@@ -677,7 +680,7 @@ fun RecordingScreen(
                         Button(
                             onClick = {
                                 viewModel.saveAndExit()
-                                navController.popBackStack()
+                                navController.navigate(Screen.Home.route)
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = buttonColor)
                         ) {

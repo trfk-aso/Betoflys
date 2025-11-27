@@ -2,10 +2,16 @@ package org.betofly.app.viewModel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import export.PdfSharer
+import export.SingleTripExporter
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.betofly.app.model.EntryModel
 import org.betofly.app.model.EntryType
 import org.betofly.app.model.Trip
@@ -14,6 +20,7 @@ import org.betofly.app.model.TripUiModel
 import org.betofly.app.repository.EntryRepository
 import org.betofly.app.repository.TripRepository
 import org.betofly.app.ui.screens.home.daysUntil
+import org.betofly.app.viewModel.toModel
 import kotlin.math.log
 
 class HomeViewModel(
@@ -31,8 +38,12 @@ class HomeViewModel(
         observeTrips()
     }
 
+    private var tripsJob: Job? = null
+
     private fun observeTrips() {
-        viewModelScope.launch {
+        tripsJob?.cancel()
+
+        tripsJob = viewModelScope.launch {
             repository.observeAllTrips().collect { trips ->
                 val filtered = _selectedCategory.value?.let { category ->
                     trips.filter { it.category == category }
@@ -42,13 +53,11 @@ class HomeViewModel(
                     _uiState.value = HomeUiState.Empty
                 } else {
                     val tripsUiModels = filtered.map { enrichTrip(it) }
-                    val recentlyEdited = repository.getRecentlyEditedTrips().map { enrichTrip(it) }
-                    val recentlyExported = repository.getRecentlyExportedTrips().map { enrichTrip(it) }
 
                     _uiState.value = HomeUiState.Success(
                         trips = tripsUiModels,
-                        recentlyEdited = recentlyEdited,
-                        recentlyExported = recentlyExported
+                        recentlyEdited = repository.getRecentlyEditedTrips().map { enrichTrip(it) },
+                        recentlyExported = repository.getRecentlyExportedTrips().map { enrichTrip(it) }
                     )
                 }
             }
@@ -66,6 +75,35 @@ class HomeViewModel(
     fun createTrip(trip: Trip) = viewModelScope.launch { repository.insertTrip(trip) }
     fun editTrip(trip: Trip) = viewModelScope.launch { repository.updateTrip(trip) }
     fun exportTrip(tripId: Long) = viewModelScope.launch { repository.markTripAsExported(tripId) }
+
+    fun exportSingleTrip(tripId: Long) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val trip = repository.getTripById(tripId)
+                if (trip == null) {
+                    println("ERROR exporting trip: Trip $tripId not found")
+                    return@launch
+                }
+
+                val entries = repository.getEntriesForTrip(tripId)
+
+                val pdfBytes = SingleTripExporter.exportTrip(trip, entries)
+
+                withContext(Dispatchers.Main) {
+                    PdfSharer.share(
+                        pdfBytes,
+                        "Trip_${trip.title.replace(" ", "_")}.pdf"
+                    )
+                }
+
+                repository.markTripAsExported(tripId)
+
+            } catch (e: Exception) {
+                println("ERROR exporting trip: ${e.message}")
+            }
+        }
+    }
+
     fun toggleFavorite(tripId: Long) = viewModelScope.launch {
         if (repository.isFavorite(tripId)) repository.removeFavorite(tripId)
         else repository.addFavorite(tripId)

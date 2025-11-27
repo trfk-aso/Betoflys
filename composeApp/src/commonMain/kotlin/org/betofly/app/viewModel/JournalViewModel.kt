@@ -5,11 +5,15 @@ import androidx.compose.ui.text.style.LineBreak.Companion.Paragraph
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import export.PdfExporter
+import export.PdfSharer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.plus
 import org.betofly.app.model.EntryModel
 import org.betofly.app.model.EntryType
 import org.betofly.app.model.TripCategory
@@ -115,16 +119,24 @@ class JournalViewModel(
 
 
     fun exportDay(date: LocalDate) = viewModelScope.launch(Dispatchers.Default) {
+
+        val start = date
+        val end = date.plus(DatePeriod(days = 1))
+
         val entries = entryRepository.searchEntries(
-            startDate = date,
-            endDate = date
+            startDate = start,
+            endDate = end
         )
 
+        println("PDF EXPORT → range $start .. $end, entries = ${entries.size}")
+
         val pdfBytes = PdfExporter.exportDay(date, entries)
+        val fileName = "journal_${date}.pdf"
 
-        println("PDF generated, size: ${pdfBytes.size} bytes")
+        withContext(Dispatchers.Main) {
+            PdfSharer.share(pdfBytes, fileName)
+        }
     }
-
 }
 
 sealed class JournalUiState {

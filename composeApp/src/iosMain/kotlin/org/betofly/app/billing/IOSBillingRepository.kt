@@ -1,13 +1,19 @@
 package org.betofly.app.billing
 
 import io.ktor.client.request.invoke
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.betofly.app.model.Theme
 import org.betofly.app.repository.BillingRepository
 import org.betofly.app.repository.PurchaseResult
 import org.betofly.app.repository.ThemeRepository
+import org.betofly.app.repository.ThemeRepositoryImpl
 import platform.Foundation.NSSet
 import platform.StoreKit.*
 import platform.darwin.NSObject
@@ -18,36 +24,53 @@ class IOSBillingRepository(
     private val themeRepository: ThemeRepository
 ) : BillingRepository {
 
-    private val storeKitDelegate = StoreKitDelegate(themeRepository)
+    private val delegate = BillingDelegate(themeRepository)
 
-    init {
-        SKPaymentQueue.defaultQueue().addTransactionObserver(storeKitDelegate)
-        storeKitDelegate.fetchProducts()
-    }
+    override suspend fun getThemes(): List<Theme> =
+        themeRepository.getAllThemes()
 
-    override suspend fun getThemes(): List<Theme> {
-        return themeRepository.getAllThemes()
-    }
+    override suspend fun purchaseTheme(themeId: String): PurchaseResult =
+        delegate.purchaseTheme(themeId)
 
-    override suspend fun purchaseTheme(themeId: String): PurchaseResult {
-        return storeKitDelegate.purchaseTheme(themeId)
-    }
-
-    override suspend fun restorePurchases(): PurchaseResult {
-        return storeKitDelegate.restorePurchases()
-    }
+    override suspend fun restorePurchases(): PurchaseResult =
+        delegate.restorePurchases()
 }
 
-// Отдельный класс для StoreKit делегатов
-private class StoreKitDelegate(
+private class BillingDelegate(
     private val themeRepository: ThemeRepository
-) : NSObject(), SKProductsRequestDelegateProtocol, SKPaymentTransactionObserverProtocol {
+) : NSObject(),
+    SKProductsRequestDelegateProtocol,
+    SKPaymentTransactionObserverProtocol {
 
-    private var purchaseContinuation: ((PurchaseResult) -> Unit)? = null
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val themeProducts = setOf("theme_blue", "theme_gold")
     private val products: MutableMap<String, SKProduct> = mutableMapOf()
+    private val purchaseContinuations = mutableMapOf<String, (PurchaseResult) -> Unit>()
 
-    fun fetchProducts() {
+    init {
+        SKPaymentQueue.defaultQueue().addTransactionObserver(this)
+        fetchProducts()
+
+        PromotionConnector.onPromotionReceived = { productId ->
+            println(" IOSBillingDelegate processing promotion → $productId")
+            scope.launch {
+                autoPurchaseFromPromotion(productId)
+            }
+        }
+    }
+
+    private suspend fun autoPurchaseFromPromotion(productId: String) {
+        val product = products[productId]
+        if (product == null) {
+            println(" Promotion product not loaded: $productId")
+            return
+        }
+        SKPaymentQueue.defaultQueue().addPayment(
+            SKPayment.paymentWithProduct(product)
+        )
+    }
+
+    private fun fetchProducts() {
         val request = SKProductsRequest(productIdentifiers = themeProducts)
         request.delegate = this
         request.start()
@@ -55,59 +78,103 @@ private class StoreKitDelegate(
 
     suspend fun purchaseTheme(themeId: String): PurchaseResult =
         suspendCancellableCoroutine { continuation ->
-            val product = products[themeId]
-            if (product == null) {
-                continuation.resume(PurchaseResult.Error("Product not found"))
+            if (themeId == "light") {
+                continuation.resume(PurchaseResult.Success) {}
                 return@suspendCancellableCoroutine
             }
 
-            purchaseContinuation = { result -> continuation.resume(result) }
+            val product = products[themeId]
+            if (product == null) {
+                continuation.resume(PurchaseResult.Error("Product not found: $themeId")) {}
+                return@suspendCancellableCoroutine
+            }
 
+            purchaseContinuations[themeId] = { result -> continuation.resume(result) {} }
             val payment = SKPayment.paymentWithProduct(product)
             SKPaymentQueue.defaultQueue().addPayment(payment)
         }
 
     suspend fun restorePurchases(): PurchaseResult =
         suspendCancellableCoroutine { continuation ->
-            purchaseContinuation = { result -> continuation.resume(result) }
+            purchaseContinuations["restore"] = { result ->
+                continuation.resume(result) {}
+            }
+
             SKPaymentQueue.defaultQueue().restoreCompletedTransactions()
+
+            scope.launch {
+                delay(4000)
+                if (purchaseContinuations.containsKey("restore")) {
+                    purchaseContinuations.remove("restore")?.invoke(PurchaseResult.Failure)
+                }
+            }
         }
 
-    // --- SKProductsRequestDelegateProtocol ---
-    override fun productsRequest(request: SKProductsRequest, didReceiveResponse: SKProductsResponse) {
-        val skProducts = didReceiveResponse.products ?: return
-        skProducts.forEach { any ->
+    override fun productsRequest(
+        request: SKProductsRequest,
+        didReceiveResponse: SKProductsResponse
+    ) {
+        (didReceiveResponse.products ?: emptyList<Any>()).forEach { any ->
             val product = any as? SKProduct ?: return@forEach
             val id = product.productIdentifier ?: return@forEach
-            products[id] = product
+            if (id in themeProducts) {
+                products[id] = product
+            }
         }
     }
 
-    // --- SKPaymentTransactionObserverProtocol ---
-    override fun paymentQueue(queue: SKPaymentQueue, updatedTransactions: List<*>) {
+    override fun paymentQueue(
+        queue: SKPaymentQueue,
+        updatedTransactions: List<*>
+    ) {
         updatedTransactions.forEach { any ->
-            val transaction = any as? SKPaymentTransaction ?: return@forEach
-            when (transaction.transactionState) {
-                SKPaymentTransactionState.SKPaymentTransactionStatePurchased -> handlePurchased(transaction)
-                SKPaymentTransactionState.SKPaymentTransactionStateFailed -> {
-                    purchaseContinuation?.invoke(PurchaseResult.Failure)
-                    purchaseContinuation = null
-                    SKPaymentQueue.defaultQueue().finishTransaction(transaction)
-                }
-                SKPaymentTransactionState.SKPaymentTransactionStateRestored -> handlePurchased(transaction)
+            val tx = any as? SKPaymentTransaction ?: return@forEach
+            when (tx.transactionState) {
+                SKPaymentTransactionState.SKPaymentTransactionStatePurchased,
+                SKPaymentTransactionState.SKPaymentTransactionStateRestored -> handlePurchased(tx)
+                SKPaymentTransactionState.SKPaymentTransactionStateFailed -> handleFailed(tx)
                 else -> {}
             }
         }
     }
 
     private fun handlePurchased(transaction: SKPaymentTransaction) {
-        val themeId = transaction.payment.productIdentifier ?: return
-        GlobalScope.launch {
-            themeRepository.markThemePurchased(themeId)
-            themeRepository.setCurrentTheme(themeId)
+        val themeId = transaction.payment.productIdentifier ?: run {
+            SKPaymentQueue.defaultQueue().finishTransaction(transaction)
+            return
         }
-        purchaseContinuation?.invoke(PurchaseResult.Success)
-        purchaseContinuation = null
+
+        val callback = purchaseContinuations.remove(themeId) ?: purchaseContinuations.remove("restore")
+
+        scope.launch {
+            try {
+                themeRepository.markThemePurchased(themeId)
+                themeRepository.setCurrentTheme(themeId)
+
+                PromotionConnector.onPurchaseCompleted?.invoke()
+
+                callback?.invoke(PurchaseResult.Success)
+            } catch (t: Throwable) {
+                callback?.invoke(PurchaseResult.Error(t.message ?: "Unknown error"))
+            } finally {
+                SKPaymentQueue.defaultQueue().finishTransaction(transaction)
+            }
+        }
+    }
+
+    private fun handleFailed(transaction: SKPaymentTransaction) {
+        val themeId = transaction.payment.productIdentifier
+        val cb = if (themeId != null) purchaseContinuations.remove(themeId)
+        else purchaseContinuations.remove("restore")
+
+        cb?.invoke(PurchaseResult.Failure)
         SKPaymentQueue.defaultQueue().finishTransaction(transaction)
+    }
+
+    fun dispose() {
+        SKPaymentQueue.defaultQueue().removeTransactionObserver(this)
+        purchaseContinuations.clear()
+        products.clear()
+        scope.cancel()
     }
 }

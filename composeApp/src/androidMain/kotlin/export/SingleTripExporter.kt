@@ -1,71 +1,12 @@
 package export
 
-import android.content.Context
-import android.content.Intent
-import androidx.compose.ui.platform.LocalContext
-import androidx.core.content.FileProvider
-import kotlinx.datetime.LocalDate
-import java.io.ByteArrayOutputStream
-import com.itextpdf.kernel.pdf.PdfWriter
-import com.itextpdf.kernel.pdf.PdfDocument
-import com.itextpdf.layout.Document
-import com.itextpdf.layout.element.Paragraph
-import org.betofly.app.AppBetofly
 import android.graphics.*
-import kotlin.math.min
-import org.betofly.app.data.Betofly
+import android.graphics.pdf.PdfDocument
 import org.betofly.app.model.EntryModel
 import org.betofly.app.model.Trip
-import org.koin.android.ext.koin.androidContext
+import java.io.ByteArrayOutputStream
 import java.io.File
-
-actual object PdfExporter {
-    actual fun exportDay(date: LocalDate, entries: List<EntryModel>): ByteArray {
-        val baos = ByteArrayOutputStream()
-        try {
-            val writer = PdfWriter(baos)
-            val pdf = PdfDocument(writer)
-            val document = Document(pdf)
-
-            document.add(Paragraph("Journal for $date").setBold().setFontSize(18f))
-            document.add(Paragraph("\n"))
-
-            entries.forEachIndexed { index, entry ->
-                document.add(Paragraph("${index + 1}. ${entry.title ?: "No Title"}"))
-                entry.text?.let { document.add(Paragraph(it)) }
-                entry.mediaIds.forEach { media -> document.add(Paragraph("Media: $media")) }
-                document.add(Paragraph("\n"))
-            }
-
-            document.close()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-        return baos.toByteArray()
-    }
-}
-
-actual object PdfSharer {
-    actual fun share(pdfBytes: ByteArray, fileName: String) {
-        val context = AppBetofly.androidContext
-        val file = File(context.cacheDir, fileName)
-        file.writeBytes(pdfBytes)
-
-        val uri = FileProvider.getUriForFile(
-            context,
-            "${context.packageName}.provider",
-            file
-        )
-
-        val intent = Intent(Intent.ACTION_SEND).apply {
-            type = "application/pdf"
-            putExtra(Intent.EXTRA_STREAM, uri)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
-
-        context.startActivity(Intent.createChooser(intent, "Share PDF"))
-    }
-}
+import kotlin.math.min
 
 actual object SingleTripExporter {
 
@@ -129,14 +70,12 @@ actual object SingleTripExporter {
             y += newH + 20
         }
 
-        // HEADER
         drawText("Trip: ${trip.title}", 22f)
         drawText("Category: ${trip.category}", 16f, false)
         drawText("Start Date: ${trip.startDate}", 16f, false)
         drawText("End Date: ${trip.endDate}", 16f, false)
         drawText("", 12f)
 
-        // DESCRIPTION
         trip.description?.let {
             drawText("Description:", 18f)
             drawText(it, 14f, false)

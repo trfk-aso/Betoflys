@@ -17,11 +17,9 @@ import platform.UIKit.UIViewController
 fun MainViewController(): UIViewController {
     initKoin()
 
-    // Получаем репозитории
     val themeRepository: ThemeRepository = KoinPlatform.getKoin().get()
     val billingRepository: BillingRepository = KoinPlatform.getKoin().get()
 
-    // ComposeUIViewController на iOS принимает @Composable контент через конструктор
     return ComposeUIViewController(
         content = {
             App(

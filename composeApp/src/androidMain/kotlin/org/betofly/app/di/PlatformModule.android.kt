@@ -38,10 +38,17 @@ import java.io.FileOutputStream
 actual val platformModule = module {
     single<DatabaseDriverFactory> { AndroidDatabaseDriverFactory(androidContext()) }
 }
+actual fun normalizeToAbsolutePath(input: String): String {
+    return when {
+        input.startsWith("file://") -> input.removePrefix("file://")
+        else -> input
+    }
+}
 
 @Composable
 actual fun ImagePicker(
-    onImagePicked: (String) -> Unit
+    onImagePicked: (String) -> Unit,
+    themeRepository: ThemeRepository
 ) {
     val context = LocalContext.current
     var coverImageFile by remember { mutableStateOf<File?>(null) }

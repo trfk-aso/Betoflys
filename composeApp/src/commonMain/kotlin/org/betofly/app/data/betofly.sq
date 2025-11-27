@@ -1,4 +1,3 @@
--- Trip Table
 CREATE TABLE trip (
     id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL,
@@ -7,22 +6,21 @@ CREATE TABLE trip (
     category TEXT NOT NULL,
     cover_image_id TEXT,
     description TEXT,
-    tags TEXT, -- JSON array of strings
+    tags TEXT,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
-    last_exported_at TEXT, -- nullable
+    last_exported_at TEXT,
     progress REAL DEFAULT 0,
-    duration INTEGER DEFAULT 0  -- <--- новая колонка
+    duration INTEGER DEFAULT 0
 );
 
--- Entry Table
 CREATE TABLE entry (
     id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     trip_id INTEGER NOT NULL,
     type TEXT NOT NULL,
     title TEXT,
     text TEXT,
-    media_ids TEXT, -- JSON array
+    media_ids TEXT,
     latitude REAL,
     longitude REAL,
     timestamp TEXT NOT NULL,
@@ -35,12 +33,12 @@ CREATE TABLE entry (
 CREATE TABLE ThemeEntity (
     id TEXT NOT NULL PRIMARY KEY,
     name TEXT NOT NULL,
-    isPurchased INTEGER NOT NULL, -- 1 = куплена, 0 = нет
-    type TEXT NOT NULL,           -- free / paid
-    previewRes TEXT,              -- ресурс для превью (например картинка/иконка)
-    primaryColor INTEGER,         -- основной цвет
-    splashText TEXT,              -- девиз/слоган
-    price REAL                    -- цена в долларах (NULL для бесплатных тем)
+    isPurchased INTEGER NOT NULL,
+    type TEXT NOT NULL,
+    previewRes TEXT,
+    primaryColor INTEGER,
+    splashText TEXT,
+    price REAL
 );
 
 CREATE TABLE CurrentThemeEntity (
@@ -56,7 +54,6 @@ VALUES
 ('theme_blue', 'Royal Blue', 0, 'paid', 'bg_royal_blue', 4283782485, 'Stay sharp!', 1.99),
 ('theme_gold', 'Graphite Gold', 0, 'paid', 'bg_graphite_gold', 4294956800, 'Shine on!', 1.99);
 
--- Place Table
 CREATE TABLE place (
     id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     trip_id INTEGER NOT NULL,
@@ -68,7 +65,6 @@ CREATE TABLE place (
     FOREIGN KEY(trip_id) REFERENCES trip(id) ON DELETE CASCADE
 );
 
--- RoutePoint Table
 CREATE TABLE route_point (
     id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     trip_id INTEGER NOT NULL,
@@ -80,14 +76,12 @@ CREATE TABLE route_point (
     FOREIGN KEY(trip_id) REFERENCES trip(id) ON DELETE CASCADE
 );
 
--- Tag Table
 CREATE TABLE tag (
     id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     color TEXT
 );
 
--- Favorite Table
 CREATE TABLE favorite (
     id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     trip_id INTEGER,
@@ -96,7 +90,6 @@ CREATE TABLE favorite (
     FOREIGN KEY(entry_id) REFERENCES entry(id) ON DELETE CASCADE
 );
 
--- Attachment Table
 CREATE TABLE attachment (
     id TEXT NOT NULL PRIMARY KEY,
     type TEXT NOT NULL,
@@ -109,23 +102,17 @@ CREATE TABLE recent_query (
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
--------------------------------------------------------
--- QUERIES
--------------------------------------------------------
 
--- Insert Trip
 insertTrip:
-INSERT INTO trip(title, start_date, end_date, category, cover_image_id, description, tags, created_at, updated_at, last_exported_at, progress)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
--- Get all trips
+INSERT INTO trip(title, start_date, end_date, category, cover_image_id, description, tags, created_at, updated_at, last_exported_at, progress, duration)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
 selectAllTrips:
 SELECT * FROM trip ORDER BY start_date DESC;
 
--- Delete trip by id
 deleteTrip:
 DELETE FROM trip WHERE id = ?;
 
--- Insert Entry
 insertEntry:
 INSERT INTO entry(trip_id, type, title, text, media_ids, latitude, longitude, timestamp, tags, created_at, updated_at)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
@@ -161,7 +148,6 @@ SELECT *
 FROM entry
 WHERE trip_id = ?;
 
--- Favorites
 insertFavorite:
 INSERT INTO favorite(trip_id) VALUES (?);
 
@@ -273,7 +259,6 @@ WHERE id NOT IN (
     SELECT id FROM recent_query ORDER BY created_at DESC LIMIT ?
 );
 
--- Select places for trip
 selectPlacesForTrip:
 SELECT *
 FROM place
@@ -331,6 +316,9 @@ WHERE id = ?;
 
 insertTheme:
 INSERT OR REPLACE INTO ThemeEntity(
-    id, name, isPurchased, type, previewRes, primaryColor, splashText
-) VALUES (?, ?, ?, ?, ?, ?, ?);
+    id, name, isPurchased, type, previewRes, primaryColor, splashText, price
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+
+lastInsertRowId:
+SELECT last_insert_rowid();
 

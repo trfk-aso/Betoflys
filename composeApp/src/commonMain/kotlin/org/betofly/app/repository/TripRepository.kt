@@ -50,6 +50,7 @@ interface TripRepository {
     suspend fun updateTripDuration(tripId: Long, duration: Long)
     fun observeAllTrips(): Flow<List<Trip>>
 
+    suspend fun insertTripAndReturnId(trip: Trip): Long
 }
 
 class TripRepositoryImpl(
@@ -94,7 +95,8 @@ class TripRepositoryImpl(
                 created_at = trip.createdAt.toString(),
                 updated_at = trip.updatedAt.toString(),
                 last_exported_at = trip.lastExportedAt?.toString(),
-                progress = trip.progress.toDouble()
+                progress = trip.progress.toDouble(),
+                duration = trip.duration
             )
         }
         refreshTrips()
@@ -300,6 +302,27 @@ class TripRepositoryImpl(
             queries.updateTripDuration(duration, tripId)
         }
         refreshTrips()
+    }
+
+    override suspend fun insertTripAndReturnId(trip: Trip): Long {
+        return withContext(ioDispatcher) {
+            queries.insertTrip(
+                title = trip.title,
+                start_date = trip.startDate.toString(),
+                end_date = trip.endDate.toString(),
+                category = trip.category.name,
+                cover_image_id = trip.coverImageId,
+                description = trip.description,
+                tags = trip.tags.joinToString(","),
+                created_at = trip.createdAt.toString(),
+                updated_at = trip.updatedAt.toString(),
+                last_exported_at = trip.lastExportedAt?.toString(),
+                progress = trip.progress.toDouble(),
+                duration = trip.duration
+            )
+
+            queries.lastInsertRowId().executeAsOne()
+        }
     }
 }
 

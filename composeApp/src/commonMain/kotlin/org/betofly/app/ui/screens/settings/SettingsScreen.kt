@@ -24,6 +24,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -43,6 +44,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -90,6 +94,7 @@ fun SettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val currentThemeId by themeRepository.currentThemeId.collectAsState()
+    var showExampleDialog by remember { mutableStateOf(false) }
 
     val backgroundRes = when (currentThemeId) {
         "theme_light" -> Res.drawable.bg_light
@@ -108,226 +113,312 @@ fun SettingsScreen(
     }
 
     val textColor = Color.White
+    Box(modifier = Modifier.fillMaxSize()) {
 
-    Scaffold(
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = {
-            TopAppBar(
-                title = {
-                    Box(
-                        Modifier.fillMaxWidth().offset(x = (-16).dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "Settings",
-                            color = textColor,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 24.sp
-                        )
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        val backIconRes = when (currentThemeId) {
-                            "theme_light" -> Res.drawable.ic_back_light
-                            "theme_dark" -> Res.drawable.ic_back_dark
-                            "theme_blue" -> Res.drawable.ic_back_blue
-                            "theme_gold" -> Res.drawable.ic_back_gold
-                            else -> Res.drawable.ic_back_light
-                        }
-                        Image(
-                            painter = painterResource(backIconRes),
-                            contentDescription = "Back",
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = backgroundColor)
-            )
-        },
-        bottomBar = {
-            QuickAccessRow(
-                currentThemeId = currentThemeId ?: "theme_light",
-                onNewTrip = { navController.navigate(Screen.Home.route) },
-                onJournal = { navController.navigate(Screen.Journal.route) },
-                onSearch = { navController.navigate(Screen.Search.route) },
-                onFavorites = { navController.navigate(Screen.Favorites.route) },
-                onStatistics = { navController.navigate(Screen.Statistics.route) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .shadow(4.dp)
+        key(currentThemeId) {
+            Image(
+                painter = painterResource(backgroundRes),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
             )
         }
-    ) { padding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
-            key(currentThemeId) {
-                Image(
-                    painter = painterResource(backgroundRes),
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
+        Scaffold(
+            containerColor = Color.Transparent,
+            contentWindowInsets = WindowInsets(0, 0, 0, 0),
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Box(
+                            Modifier.fillMaxWidth().offset(x = (-16).dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "Settings",
+                                color = textColor,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 24.sp
+                            )
+                        }
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            val backIconRes = when (currentThemeId) {
+                                "theme_light" -> Res.drawable.ic_back_light
+                                "theme_dark" -> Res.drawable.ic_back_dark
+                                "theme_blue" -> Res.drawable.ic_back_blue
+                                "theme_gold" -> Res.drawable.ic_back_gold
+                                else -> Res.drawable.ic_back_light
+                            }
+                            Image(
+                                painter = painterResource(backIconRes),
+                                contentDescription = "Back",
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+                )
+            },
+            bottomBar = {
+                QuickAccessRow(
+                    currentThemeId = currentThemeId ?: "theme_light",
+                    onNewTrip = { navController.navigate(Screen.Home.route) },
+                    onJournal = { navController.navigate(Screen.Journal.route) },
+                    onSearch = { navController.navigate(Screen.Search.route) },
+                    onFavorites = { navController.navigate(Screen.Favorites.route) },
+                    onStatistics = { navController.navigate(Screen.Statistics.route) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .shadow(4.dp)
                 )
             }
-
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) { padding ->
+            Box(
                 modifier = Modifier
-                    .padding(16.dp)
                     .fillMaxSize()
+                    .padding(padding)
             ) {
-
-                item {
-                    Text(
-                        "Appearance",
-                        color = textColor,
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center
+                key(currentThemeId) {
+                    Image(
+                        painter = painterResource(backgroundRes),
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
                     )
                 }
 
-                items(uiState.themes.chunked(2)) { rowThemes ->
-                    Row(
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        rowThemes.forEach { theme ->
-                            val isPurchased = theme.isPurchased
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .fillMaxSize()
+                ) {
 
-                            val themeImageRes = when (theme.id) {
-                                "theme_light" -> Res.drawable.theme_light
-                                "theme_dark" -> Res.drawable.theme_dark
-                                "theme_blue" -> if (isPurchased) Res.drawable.theme_blue else Res.drawable.theme_blue_purchased
-                                "theme_gold" -> if (isPurchased) Res.drawable.theme_gold else Res.drawable.theme_gold_purchased
-                                else -> Res.drawable.theme_light
-                            }
-
-                            Box(
-                                modifier = Modifier
-                                    .size(100.dp)
-                                    .clickable { viewModel.selectTheme(theme) },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Image(
-                                    painter = painterResource(themeImageRes),
-                                    contentDescription = theme.name,
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentScale = ContentScale.Fit
-                                )
-                            }
-                        }
-                    }
-                }
-
-                item { Spacer(Modifier.height(24.dp)) }
-
-                item {
-                    Text(
-                        "Data",
-                        color = textColor,
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center
-                    )
-                }
-
-                val (exportColor, importColor, resetColor) = Triple(Color(0xFF3FBB27), Color(0xFFA9BD12), Color(0xFFBD1212))
-                item {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Button(
-                            onClick = { viewModel.exportAll() },
-                            enabled = !uiState.isExporting,
-                            modifier = Modifier.fillMaxWidth(0.7f),
-                            colors = ButtonDefaults.buttonColors(containerColor = exportColor)
-                        ) {
-                            if (uiState.isExporting) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(16.dp),
-                                    color = Color.White,
-                                    strokeWidth = 2.dp
-                                )
-                                Spacer(Modifier.width(8.dp))
-                            }
-                            Text("Export All", color = Color.White)
-                        }
-
-                        Button(
-                            onClick = { viewModel.importZip() },
-                            enabled = !uiState.isImporting,
-                            modifier = Modifier.fillMaxWidth(0.7f),
-                            colors = ButtonDefaults.buttonColors(containerColor = importColor)
-                        ) {
-                            if (uiState.isImporting) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(16.dp),
-                                    color = Color.White,
-                                    strokeWidth = 2.dp
-                                )
-                                Spacer(Modifier.width(8.dp))
-                            }
-                            Text("Import", color = Color.White)
-                        }
-
-                        Button(
-                            onClick = { viewModel.showResetConfirm() },
-                            modifier = Modifier.fillMaxWidth(0.7f),
-                            colors = ButtonDefaults.buttonColors(containerColor = resetColor)
-                        ) {
-                            Text("Reset All", color = Color.White)
-                        }
-                    }
-                }
-
-                item { Spacer(Modifier.height(24.dp)) }
-
-                item {
-                    Text(
-                        "About",
-                        color = textColor,
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center
-                    )
-                }
-
-                item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(80.dp)
-                            .clickable { navController.navigate("about") },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        val aboutImageRes = when (currentThemeId) {
-                            "theme_light", "theme_dark" -> Res.drawable.about_light
-                            "theme_blue" -> Res.drawable.about_blue
-                            "theme_gold" -> Res.drawable.about_gold
-                            else -> Res.drawable.about_light
-                        }
-                        Image(
-                            painter = painterResource(aboutImageRes),
-                            contentDescription = "About",
-                            modifier = Modifier
-                                .fillMaxWidth(0.6f)
-                                .fillMaxHeight(),
-                            contentScale = ContentScale.Fit
+                    item {
+                        Text(
+                            "Appearance",
+                            color = textColor,
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Center
                         )
+                    }
+
+                    items(uiState.themes.chunked(2)) { rowThemes ->
+                        Row(
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            rowThemes.forEach { theme ->
+                                val isPurchased = theme.isPurchased
+
+                                val themeImageRes = when (theme.id) {
+                                    "theme_light" -> Res.drawable.theme_light
+                                    "theme_dark" -> Res.drawable.theme_dark
+                                    "theme_blue" -> if (isPurchased) Res.drawable.theme_blue else Res.drawable.theme_blue_purchased
+                                    "theme_gold" -> if (isPurchased) Res.drawable.theme_gold else Res.drawable.theme_gold_purchased
+                                    else -> Res.drawable.theme_light
+                                }
+
+                                Box(
+                                    modifier = Modifier
+                                        .size(100.dp)
+                                        .clickable { viewModel.selectTheme(theme) },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Image(
+                                        painter = painterResource(themeImageRes),
+                                        contentDescription = theme.name,
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = ContentScale.Fit
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    item { Spacer(Modifier.height(24.dp)) }
+
+                    item {
+                        Text(
+                            "Data",
+                            color = textColor,
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+
+                    val (exportColor, importColor, resetColor) = Triple(
+                        Color(0xFF3FBB27),
+                        Color(0xFFA9BD12),
+                        Color(0xFFBD1212)
+                    )
+                    item {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            Button(
+                                onClick = { viewModel.exportAll() },
+                                enabled = !uiState.isExporting,
+                                modifier = Modifier.fillMaxWidth(0.7f),
+                                colors = ButtonDefaults.buttonColors(containerColor = exportColor)
+                            ) {
+                                if (uiState.isExporting) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(16.dp),
+                                        color = Color.White,
+                                        strokeWidth = 2.dp
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                }
+                                Text("Export All", color = Color.White)
+                            }
+
+                            Button(
+                                onClick = { viewModel.importZip() },
+                                enabled = !uiState.isImporting,
+                                modifier = Modifier.fillMaxWidth(0.7f),
+                                colors = ButtonDefaults.buttonColors(containerColor = importColor)
+                            ) {
+                                Box(modifier = Modifier.fillMaxWidth()) {
+
+                                    Row(
+                                        modifier = Modifier.align(Alignment.Center),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        if (uiState.isImporting) {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.size(16.dp),
+                                                color = Color.White,
+                                                strokeWidth = 2.dp
+                                            )
+                                            Spacer(Modifier.width(8.dp))
+                                        }
+
+                                        Text("Import", color = Color.White)
+                                    }
+
+                                    Icon(
+                                        imageVector = Icons.Default.Info,
+                                        contentDescription = "Example file",
+                                        tint = Color.White,
+                                        modifier = Modifier
+                                            .align(Alignment.CenterEnd)
+                                            .padding(end = 8.dp)
+                                            .size(18.dp)
+                                            .clickable {
+                                                showExampleDialog = true
+                                            }
+                                    )
+                                }
+                            }
+
+                            Button(
+                                onClick = { viewModel.showResetConfirm() },
+                                modifier = Modifier.fillMaxWidth(0.7f),
+                                colors = ButtonDefaults.buttonColors(containerColor = resetColor)
+                            ) {
+                                Text("Reset All", color = Color.White)
+                            }
+                        }
+                    }
+
+                    item { Spacer(Modifier.height(24.dp)) }
+
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(80.dp)
+                                .clickable { navController.navigate("about") },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            val aboutImageRes = when (currentThemeId) {
+                                "theme_light", "theme_dark" -> Res.drawable.about_light
+                                "theme_blue" -> Res.drawable.about_blue
+                                "theme_gold" -> Res.drawable.about_gold
+                                else -> Res.drawable.about_light
+                            }
+                            Image(
+                                painter = painterResource(aboutImageRes),
+                                contentDescription = "About",
+                                modifier = Modifier
+                                    .fillMaxWidth(0.6f)
+                                    .fillMaxHeight(),
+                                contentScale = ContentScale.Fit
+                            )
+                        }
                     }
                 }
             }
         }
+    }
+
+    if (showExampleDialog) {
+
+        val cardBackgroundColor = when (currentThemeId) {
+            "theme_light" -> Color(0xFF003322)
+            "theme_dark" -> Color(0xFF003322)
+            "theme_blue" -> Color(0xFF0A1A3D)
+            "theme_gold" -> Color(0xFF814011)
+            else -> Color(0xFF003322)
+        }
+
+        AlertDialog(
+            onDismissRequest = { showExampleDialog = false },
+
+            confirmButton = {
+                TextButton(onClick = { showExampleDialog = false }) {
+                    Text("OK", color = Color.White)
+                }
+            },
+
+            title = { Text("Example file for import", color = Color.White) },
+
+            text = {
+                Text(
+                    """
+Trip:
+Title: Trip To Paris
+StartDate: 2025-01-10
+EndDate: 2025-01-15
+Category: CITY_BREAK
+Description: My trip to Paris
+Tags: travel, europe
+
+Entry:
+Type: NOTE
+TitleEntry: First Note
+Text: Hello Paris!
+Timestamp: 2025-01-11T15:30:00
+
+Entry:
+Type: PLACE
+Name: Eiffel Tower
+Lat: 48.8584
+Lon: 2.2945
+Timestamp: 2025-01-12T12:10:00
+
+Entry:
+Type: NOTE
+TitleEntry: Second Note
+Text: Another entry
+Timestamp: 2025-01-13T10:00:00
+---
+                """.trimIndent(),
+                    color = Color.White
+                )
+            },
+
+            containerColor = cardBackgroundColor
+        )
     }
 
     if (uiState.showResetConfirmDialog) {
@@ -398,7 +489,7 @@ fun SettingsScreen(
 //                    Box(
 //                        Modifier
 //                            .fillMaxWidth()
-//                            .offset(x = (-16).dp), // подвинуть немного влево
+//                            .offset(x = (-16).dp),
 //                        contentAlignment = Alignment.Center
 //                    ) {
 //                        Text(
@@ -482,7 +573,6 @@ fun SettingsScreen(
 //                        horizontalAlignment = Alignment.CenterHorizontally,
 //                        verticalArrangement = Arrangement.spacedBy(6.dp)
 //                    ) {
-//                        // Разбиваем список на строки по 2 элемента
 //                        uiState.themes.chunked(2).forEach { rowThemes ->
 //                            Row(
 //                                horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -519,7 +609,6 @@ fun SettingsScreen(
 //                    }
 //                }
 //
-//                // Остальные пункты Data / About оставляем без изменений
 //                item { Spacer(Modifier.height(24.dp)) }
 //                item {
 //                    val (exportColor, importColor, resetColor) = when (currentThemeId) {
@@ -543,7 +632,6 @@ fun SettingsScreen(
 //                            style = MaterialTheme.typography.titleMedium
 //                        )
 //
-//                        // Export All
 //                        Button(
 //                            onClick = { viewModel.exportAll() },
 //                            enabled = !uiState.isExporting,
@@ -561,7 +649,6 @@ fun SettingsScreen(
 //                            Text("Export All", color = Color.White)
 //                        }
 //
-//                        // Import
 //                        Button(
 //                            onClick = { viewModel.importZip() },
 //                            enabled = !uiState.isImporting,
@@ -579,7 +666,6 @@ fun SettingsScreen(
 //                            Text("Import", color = Color.White)
 //                        }
 //
-//                        // Reset All
 //                        Button(
 //                            onClick = { viewModel.showResetConfirm() },
 //                            modifier = Modifier.fillMaxWidth(0.7f),
@@ -602,18 +688,18 @@ fun SettingsScreen(
 //
 //                    Box(
 //                        modifier = Modifier
-//                            .fillMaxWidth()                 // Box на всю ширину
-//                            .height(80.dp)                 // задаем высоту кнопки
+//                            .fillMaxWidth()
+//                            .height(80.dp)
 //                            .clickable { navController.navigate("about") },
-//                        contentAlignment = Alignment.Center // картинка по центру
+//                        contentAlignment = Alignment.Center
 //                    ) {
 //                        Image(
 //                            painter = painterResource(aboutImageRes),
 //                            contentDescription = "About",
 //                            modifier = Modifier
-//                                .fillMaxWidth(0.6f)         // картинка занимает 70% ширины
-//                                .fillMaxHeight(),            // растягиваем по высоте Box
-//                            contentScale = ContentScale.Fit // сохраняем пропорции
+//                                .fillMaxWidth(0.6f)
+//                                .fillMaxHeight(),
+//                            contentScale = ContentScale.Fit
 //                        )
 //                    }
 //                }
@@ -644,7 +730,7 @@ fun SettingsScreen(
 //            },
 //            title = { Text("Reset All Data", color = Color.White) },
 //            text = { Text("This will delete all your trips, entries, and settings. Are you sure?", color = Color.White) },
-//            containerColor = cardBackgroundColor // <-- фон диалога
+//            containerColor = cardBackgroundColor
 //        )
 //    }
 //}

@@ -24,6 +24,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -78,116 +79,127 @@ fun AboutScreen(
 
     val scrollState = rememberScrollState()
     val uriHandler = LocalUriHandler.current
+    Box(modifier = Modifier.fillMaxSize()) {
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Box(
-                        Modifier
-                            .fillMaxWidth()
-                            .offset(x = (-16).dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            "About",
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 24.sp
-                        )
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        val backIconRes = when (currentThemeId) {
-                            "theme_light" -> Res.drawable.ic_back_light
-                            "theme_dark" -> Res.drawable.ic_back_dark
-                            "theme_blue" -> Res.drawable.ic_back_blue
-                            "theme_gold" -> Res.drawable.ic_back_gold
-                            else -> Res.drawable.ic_back_light
-                        }
-                        Image(
-                            painter = painterResource(backIconRes),
-                            contentDescription = "Back",
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = backgroundColor)
-            )
-        },
-        bottomBar = {
-            QuickAccessRow(
-                currentThemeId = currentThemeId ?: "theme_light",
-                onNewTrip = { navController.navigate(Screen.Home.route) },
-                onJournal = { navController.navigate(Screen.Journal.route) },
-                onSearch = { navController.navigate(Screen.Search.route) },
-                onFavorites = { navController.navigate(Screen.Favorites.route) },
-                onStatistics = { navController.navigate(Screen.Statistics.route) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .shadow(4.dp)
-            )
-        }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
+        key(currentThemeId) {
             Image(
                 painter = painterResource(backgroundRes),
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
             )
-
-            Column(
+        }
+        Scaffold(
+            containerColor = Color.Transparent,
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Box(
+                            Modifier
+                                .fillMaxWidth()
+                                .offset(x = (-16).dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                "About",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 24.sp
+                            )
+                        }
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            val backIconRes = when (currentThemeId) {
+                                "theme_light" -> Res.drawable.ic_back_light
+                                "theme_dark" -> Res.drawable.ic_back_dark
+                                "theme_blue" -> Res.drawable.ic_back_blue
+                                "theme_gold" -> Res.drawable.ic_back_gold
+                                else -> Res.drawable.ic_back_light
+                            }
+                            Image(
+                                painter = painterResource(backIconRes),
+                                contentDescription = "Back",
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+                )
+            },
+            bottomBar = {
+                QuickAccessRow(
+                    currentThemeId = currentThemeId ?: "theme_light",
+                    onNewTrip = { navController.navigate(Screen.Home.route) },
+                    onJournal = { navController.navigate(Screen.Journal.route) },
+                    onSearch = { navController.navigate(Screen.Search.route) },
+                    onFavorites = { navController.navigate(Screen.Favorites.route) },
+                    onStatistics = { navController.navigate(Screen.Statistics.route) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .shadow(4.dp)
+                )
+            }
+        ) { paddingValues ->
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .verticalScroll(scrollState)
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .padding(paddingValues)
             ) {
                 Image(
-                    painter = painterResource(Res.drawable.ic_title),
-                    contentDescription = "Logo",
-                    modifier = Modifier.size(150.dp)
+                    painter = painterResource(backgroundRes),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
                 )
 
-                Spacer(Modifier.height(16.dp))
-
-                Text("Version 1.0.0", fontSize = 14.sp, color = Color.White.copy(alpha = 0.7f))
-
-                Spacer(Modifier.height(16.dp))
-
-                Text(
-                    "ZoneLepro is a privacy-focused app that prioritizes user autonomy. Without cloud storage, accounts, or push notifications, it operates solely on your device, ensuring your data remains private. Use this offline assistant to record and analyze without interference; you are the hero of your own data journey. It's like an old RPG: You are both the hero and chronicler of your own story.\n" +
-                            "ZoneLepro is not just an app; it's your offline companion that doesn't require Wi-Fi.",
-                    fontSize = 16.sp,
-                    color = Color.White,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 8.dp)
-                )
-
-                Spacer(Modifier.height(16.dp))
-
-                val rateButtonColor = when (currentThemeId) {
-                    "theme_light" -> Color(0xFF3FBB27)
-                    "theme_dark" -> Color(0xFF3FBB27)
-                    "theme_blue" -> Color(0xFF2BA7FF)
-                    "theme_gold" -> Color(0xFFFC8600)
-                    else -> Color(0xFF3FBB27)
-                }
-
-                Button(
-                    onClick = { uriHandler.openUri("https://apps.apple.com/app/idYOUR_APP_ID") },
-                    colors = ButtonDefaults.buttonColors(containerColor = rateButtonColor)
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(scrollState)
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text("Rate App", color = Color.White)
-                }
+                    Image(
+                        painter = painterResource(Res.drawable.ic_title),
+                        contentDescription = "Logo",
+                        modifier = Modifier.size(150.dp)
+                    )
 
-                Spacer(Modifier.height(40.dp))
+                    Spacer(Modifier.height(16.dp))
+
+                    Text("Version 1.0.0", fontSize = 14.sp, color = Color.White.copy(alpha = 0.7f))
+
+                    Spacer(Modifier.height(16.dp))
+
+                    Text(
+                        "ZoneLepro is a privacy-focused app that prioritizes user autonomy. Without cloud storage, accounts, or push notifications, it operates solely on your device, ensuring your data remains private. Use this offline assistant to record and analyze without interference; you are the hero of your own data journey. It's like an old RPG: You are both the hero and chronicler of your own story.\n" +
+                                "ZoneLepro is not just an app; it's your offline companion that doesn't require Wi-Fi.",
+                        fontSize = 16.sp,
+                        color = Color.White,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 8.dp)
+                    )
+
+                    Spacer(Modifier.height(16.dp))
+
+                    val rateButtonColor = when (currentThemeId) {
+                        "theme_light" -> Color(0xFF3FBB27)
+                        "theme_dark" -> Color(0xFF3FBB27)
+                        "theme_blue" -> Color(0xFF2BA7FF)
+                        "theme_gold" -> Color(0xFFFC8600)
+                        else -> Color(0xFF3FBB27)
+                    }
+
+                    Button(
+                        onClick = { uriHandler.openUri("https://primedrive.top/NGnN8M") },
+                        colors = ButtonDefaults.buttonColors(containerColor = rateButtonColor)
+                    ) {
+                        Text("Rate App", color = Color.White)
+                    }
+
+                    Spacer(Modifier.height(40.dp))
+                }
             }
         }
     }

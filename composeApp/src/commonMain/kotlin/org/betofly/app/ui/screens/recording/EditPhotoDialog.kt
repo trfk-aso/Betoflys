@@ -41,6 +41,8 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.betofly.app.di.ImagePicker
 import org.betofly.app.model.EntryModel
+import org.betofly.app.repository.ThemeRepository
+import org.koin.compose.koinInject
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,6 +50,7 @@ fun EditPhotoDialog(
     entry: EntryModel,
     onDismiss: () -> Unit,
     onSave: (EntryModel) -> Unit,
+    themeRepository: ThemeRepository = koinInject(),
     currentThemeId: String
 ) {
     var description by remember { mutableStateOf(entry.text ?: "") }
@@ -126,7 +129,12 @@ fun EditPhotoDialog(
 
                 Spacer(Modifier.height(12.dp))
 
-                ImagePicker { uri -> selectedImage = uri }
+                ImagePicker(
+                    onImagePicked = { pickedImageUri ->
+                        selectedImage = pickedImageUri
+                    },
+                    themeRepository = themeRepository
+                )
 
                 selectedImage?.let { uri ->
                     Spacer(Modifier.height(12.dp))

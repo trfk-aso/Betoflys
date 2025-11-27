@@ -1,6 +1,7 @@
 package org.betofly.app
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -38,9 +39,16 @@ fun App(
     themeRepository: ThemeRepository,
     billingRepository: BillingRepository
 ) {
+    LaunchedEffect(Unit) {
+        println("Initializing themes in App()...")
+        themeRepository.initializeThemes()
+        println("Themes initialized, currentThemeId=${themeRepository.currentThemeId.value}")
+    }
+
     val navController = rememberNavController()
     val viewModelFavorites: FavoritesViewModel = koinInject()
     val viewModelJournal: JournalViewModel = koinInject()
+
     NavHost(
         navController = navController,
         startDestination = Screen.Splash.route

@@ -44,7 +44,6 @@ fun OnboardingScreen(navController: NavHostController) {
     val scope = rememberCoroutineScope()
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // Основные слайды
         HorizontalPager(state = pagerState) { page ->
             Image(
                 painter = painterResource(pages[page]),
@@ -54,7 +53,6 @@ fun OnboardingScreen(navController: NavHostController) {
             )
         }
 
-        // Кнопка Skip
         Image(
             painter = painterResource(Res.drawable.btn_skip),
             contentDescription = "Skip",
@@ -69,7 +67,6 @@ fun OnboardingScreen(navController: NavHostController) {
                 }
         )
 
-        // Кнопка Continue / Get Started
         val isLastPage = pagerState.currentPage == pages.lastIndex
         Image(
             painter = painterResource(
@@ -79,10 +76,10 @@ fun OnboardingScreen(navController: NavHostController) {
             contentDescription = if (isLastPage) "Get Started" else "Continue",
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 64.dp)
+                .padding(bottom = 5.dp)
                 .size(
                     width = if (isLastPage) 240.dp else 200.dp,
-                    height = 240.dp
+                    height = 220.dp
                 )
                 .clickable {
                     if (isLastPage) {

@@ -130,350 +130,400 @@ fun SearchScreen(
 
     val textColor = Color.White
 
-    Scaffold(
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = {
-            TopAppBar(
-                title = {
-                    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        Text(
-                            text = "Search",
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 24.sp
-                        )
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        val backIconRes = when (currentThemeId) {
-                            "theme_light" -> Res.drawable.ic_back_light
-                            "theme_dark" -> Res.drawable.ic_back_dark
-                            "theme_blue" -> Res.drawable.ic_back_blue
-                            "theme_gold" -> Res.drawable.ic_back_gold
-                            else -> Res.drawable.ic_back_light
-                        }
-                        Image(
-                            painter = painterResource(backIconRes),
-                            contentDescription = "Back",
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { navController.navigate(Screen.Settings.route) }) {
-                        val settingsIconRes = when (currentThemeId) {
-                            "theme_light" -> Res.drawable.ic_settings_light
-                            "theme_dark" -> Res.drawable.ic_settings_dark
-                            "theme_blue" -> Res.drawable.ic_settings_blue
-                            "theme_gold" -> Res.drawable.ic_settings_gold
-                            else -> Res.drawable.ic_settings_light
-                        }
-                        Image(
-                            painter = painterResource(settingsIconRes),
-                            contentDescription = "Settings",
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = topBarBackgroundColor
-                )
-            )
-        },
-        bottomBar = {
-            QuickAccessRow(
-                currentThemeId = currentThemeId ?: "theme_light",
-                onNewTrip = { navController.navigate(Screen.Home.route) },
-                onJournal = { navController.navigate(Screen.Journal.route) },
-                onSearch = { navController.navigate(Screen.Search.route) },
-                onFavorites = { navController.navigate(Screen.Favorites.route) },
-                onStatistics = { navController.navigate(Screen.Statistics.route) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .shadow(4.dp)
-            )
-        }
-    ) { paddingValues ->
-        Box(
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Transparent)
+            .windowInsetsPadding(WindowInsets(0, 0, 0, 0))
+    ) {
+        Image(
+            painter = painterResource(backgroundRes),
+            contentDescription = null,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            Image(
-                painter = painterResource(backgroundRes),
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
+                .windowInsetsPadding(WindowInsets(0, 0, 0, 0)),
+            contentScale = ContentScale.Crop
+        )
+        Scaffold(
+            containerColor = Color.Transparent,
+            contentWindowInsets = WindowInsets(0, 0, 0, 0),
+            topBar = {
+                TopAppBar(
+                    modifier = Modifier
+                        .background(Color.Transparent),
+                    title = {
+                        Box(
+                            Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "Search",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 24.sp
+                            )
+                        }
+                    },
 
-            Column(Modifier.fillMaxSize().padding(16.dp)) {
+                    navigationIcon = {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            val backIconRes = when (currentThemeId) {
+                                "theme_light" -> Res.drawable.ic_back_light
+                                "theme_dark" -> Res.drawable.ic_back_dark
+                                "theme_blue" -> Res.drawable.ic_back_blue
+                                "theme_gold" -> Res.drawable.ic_back_gold
+                                else -> Res.drawable.ic_back_light
+                            }
 
-                CustomSearchBar(
-                    query = filters.query ?: "",
-                    onQueryChange = { viewModel.updateFilters(filters.copy(query = it)) },
-                    repository = themeRepository,
-                    modifier = Modifier.fillMaxWidth()
+                            Image(
+                                painter = painterResource(backIconRes),
+                                contentDescription = "Back",
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                    },
+
+                    actions = {
+                        IconButton(onClick = { navController.navigate(Screen.Settings.route) }) {
+                            val settingsIconRes = when (currentThemeId) {
+                                "theme_light" -> Res.drawable.ic_settings_light
+                                "theme_dark" -> Res.drawable.ic_settings_dark
+                                "theme_blue" -> Res.drawable.ic_settings_blue
+                                "theme_gold" -> Res.drawable.ic_settings_gold
+                                else -> Res.drawable.ic_settings_light
+                            }
+
+                            Image(
+                                painter = painterResource(settingsIconRes),
+                                contentDescription = "Settings",
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                    },
+
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent,
+                        scrolledContainerColor = Color.Transparent
+                    )
+                )
+            },
+
+            bottomBar = {
+                QuickAccessRow(
+                    currentThemeId = currentThemeId ?: "theme_light",
+                    onNewTrip = { navController.navigate(Screen.Home.route) },
+                    onJournal = { navController.navigate(Screen.Journal.route) },
+                    onSearch = { navController.navigate(Screen.Search.route) },
+                    onFavorites = { navController.navigate(Screen.Favorites.route) },
+                    onStatistics = { navController.navigate(Screen.Statistics.route) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .shadow(4.dp)
+                )
+            }
+        ) { paddingValues ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                Image(
+                    painter = painterResource(backgroundRes),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
                 )
 
-                Spacer(Modifier.height(16.dp))
+                Column(Modifier.fillMaxSize().padding(16.dp)) {
 
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    ThemedChip(
-                        text = "Trips",
-                        selected = filters.type == SearchType.TRIPS,
-                        onClick = { viewModel.updateFilters(filters.copy(type = SearchType.TRIPS)) },
-                        background = searchFieldColor
+                    CustomSearchBar(
+                        query = filters.query ?: "",
+                        onQueryChange = { viewModel.updateFilters(filters.copy(query = it)) },
+                        repository = themeRepository,
+                        modifier = Modifier.fillMaxWidth()
                     )
-                    ThemedChip(
-                        text = "Entries",
-                        selected = filters.type == SearchType.ENTRIES,
-                        onClick = { viewModel.updateFilters(filters.copy(type = SearchType.ENTRIES)) },
-                        background = searchFieldColor
-                    )
-                    ThemedChip(
-                        text = "Entry Type",
-                        selected = showEntryType,
-                        onClick = { showEntryType = !showEntryType },
-                        background = searchFieldColor
-                    )
-                    ThemedChip(
-                        text = "Trip Category",
-                        selected = showTripCategory,
-                        onClick = { showTripCategory = !showTripCategory },
-                        background = searchFieldColor
-                    )
-                }
 
-                Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(16.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    val favoritesIconRes = when (currentThemeId) {
-                        "theme_light" -> Res.drawable.favorite_light
-                        "theme_dark" -> Res.drawable.favorite_dark
-                        "theme_blue" -> Res.drawable.favorite_blue
-                        "theme_gold" -> Res.drawable.favorite_gold
-                        else -> Res.drawable.favorite_light
-                    }
-
-                    IconButton(
-                        onClick = {
-                            viewModel.updateFilters(
-                                filters.copy(isFavorite = if (filters.isFavorite == true) null else true)
-                            )
-                        },
-                        modifier = Modifier.size(40.dp)
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Image(
-                            painter = painterResource(favoritesIconRes),
-                            contentDescription = "Favorites",
-                            modifier = Modifier.size(60.dp)
+                        ThemedChip(
+                            text = "Trips",
+                            selected = filters.type == SearchType.TRIPS,
+                            onClick = { viewModel.updateFilters(filters.copy(type = SearchType.TRIPS)) },
+                            background = searchFieldColor
+                        )
+                        ThemedChip(
+                            text = "Entries",
+                            selected = filters.type == SearchType.ENTRIES,
+                            onClick = { viewModel.updateFilters(filters.copy(type = SearchType.ENTRIES)) },
+                            background = searchFieldColor
+                        )
+                        ThemedChip(
+                            text = "Entry Type",
+                            selected = showEntryType,
+                            onClick = { showEntryType = !showEntryType },
+                            background = searchFieldColor
+                        )
+                        ThemedChip(
+                            text = "Trip Category",
+                            selected = showTripCategory,
+                            onClick = { showTripCategory = !showTripCategory },
+                            background = searchFieldColor
                         )
                     }
 
-                    ThemedChip(
-                        text = "Date Range",
-                        selected = showDateRange,
-                        onClick = { showDateRange = !showDateRange },
-                        background = searchFieldColor
-                    )
-                }
-
-                if (showEntryType) {
                     Spacer(Modifier.height(8.dp))
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        EntryType.values().forEach { type ->
-                            ThemedChip(
-                                text = type.name,
-                                selected = filters.entryType == type,
-                                onClick = { viewModel.updateFilters(filters.copy(entryType = type)) },
-                                background = inputBackgroundColor
-                            )
-                        }
-                    }
-                }
 
-                if (showTripCategory) {
-                    Spacer(Modifier.height(8.dp))
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        TripCategory.values().forEach { cat ->
-                            ThemedChip(
-                                text = cat.name,
-                                selected = filters.category == cat,
-                                onClick = { viewModel.updateFilters(filters.copy(category = cat)) },
-                                background = inputBackgroundColor
-                            )
-                        }
-                    }
-                }
-
-                if (showDateRange) {
-                    Spacer(Modifier.height(8.dp))
-
-                    val startDatePickerState = rememberDatePickerState(
-                        initialSelectedDateMillis = filters.dateRange?.start?.toEpochMillis()
-                    )
-                    val endDatePickerState = rememberDatePickerState(
-                        initialSelectedDateMillis = filters.dateRange?.endInclusive?.toEpochMillis()
-                    )
-
-                    var showStartPicker by remember { mutableStateOf(false) }
-                    var showEndPicker by remember { mutableStateOf(false) }
-
-                    if (showStartPicker) {
-                        DatePickerDialog(
-                            onDismissRequest = { showStartPicker = false },
-                            confirmButton = {
-                                TextButton(
-                                    onClick = {
-                                        startDatePickerState.selectedDateMillis?.let {
-                                            val picked = Instant.fromEpochMilliseconds(it)
-                                                .toLocalDateTime(TimeZone.currentSystemDefault()).date
-                                            val currentEnd = filters.dateRange?.endInclusive
-                                            viewModel.updateFilters(
-                                                filters.copy(dateRange = picked..(currentEnd ?: picked))
-                                            )
-                                        }
-                                        showStartPicker = false
-                                    },
-                                    colors = ButtonDefaults.textButtonColors(
-                                        contentColor = Color.Black
-                                    )
-                                ) {
-                                    Text("OK")
-                                }
-                            },
-                            dismissButton = {
-                                TextButton(
-                                    onClick = { showStartPicker = false },
-                                    colors = ButtonDefaults.textButtonColors(
-                                        contentColor = Color.Black
-                                    )
-                                ) {
-                                    Text("Cancel")
-                                }
-                            }
-                        ) {
-                            DatePicker(state = startDatePickerState)
-                        }
-                    }
-
-                    if (showEndPicker) {
-                        DatePickerDialog(
-                            onDismissRequest = { showEndPicker = false },
-                            confirmButton = {
-                                TextButton(
-                                    onClick = {
-                                        endDatePickerState.selectedDateMillis?.let {
-                                            val picked = Instant.fromEpochMilliseconds(it)
-                                                .toLocalDateTime(TimeZone.currentSystemDefault()).date
-                                            val currentStart = filters.dateRange?.start ?: picked
-                                            viewModel.updateFilters(
-                                                filters.copy(dateRange = currentStart..picked)
-                                            )
-                                        }
-                                        showEndPicker = false
-                                    },
-                                    colors = ButtonDefaults.textButtonColors(
-                                        contentColor = Color.Black
-                                    )
-                                ) {
-                                    Text("OK")
-                                }
-                            },
-                            dismissButton = {
-                                TextButton(
-                                    onClick = { showEndPicker = false },
-                                    colors = ButtonDefaults.textButtonColors(
-                                        contentColor = Color.Black
-                                    )
-                                ) {
-                                    Text("Cancel")
-                                }
-                            }
-                        ) {
-                            DatePicker(state = endDatePickerState)
-                        }
-                    }
-
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedButton(
-                            onClick = { showStartPicker = true },
-                            colors = ButtonDefaults.outlinedButtonColors(containerColor = inputBackgroundColor)
-                        ) {
-                            Text(filters.dateRange?.start?.toString() ?: "Start Date", color = Color.White)
+                        val favoritesIconRes = when (currentThemeId) {
+                            "theme_light" -> Res.drawable.favorite_light
+                            "theme_dark" -> Res.drawable.favorite_dark
+                            "theme_blue" -> Res.drawable.favorite_blue
+                            "theme_gold" -> Res.drawable.favorite_gold
+                            else -> Res.drawable.favorite_light
                         }
 
-                        OutlinedButton(
-                            onClick = { showEndPicker = true },
-                            colors = ButtonDefaults.outlinedButtonColors(containerColor = inputBackgroundColor)
-                        ) {
-                            Text(filters.dateRange?.endInclusive?.toString() ?: "End Date", color = Color.White)
-                        }
-                    }
-                }
-
-                Spacer(Modifier.height(8.dp))
-
-                if (recent.isNotEmpty() && filters.query.isNullOrBlank()) {
-                    Text("Recent:", Modifier.padding(bottom = 4.dp), color = Color.White)
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        items(recent.take(5)) { q ->
-                            ThemedAssistChip(
-                                text = q,
-                                onClick = { viewModel.updateFilters(filters.copy(query = q)) },
-                                background = searchFieldColor
-                            )
-                        }
-                    }
-                }
-
-                Spacer(Modifier.height(8.dp))
-
-                when (val state = uiState) {
-                    is SearchUiState.Idle -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Start typing to search…", color = Color.White)
-                    }
-                    is SearchUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
-                    }
-                    is SearchUiState.Empty -> SearchEmptyState(currentThemeId ?: "theme_light")
-                    is SearchUiState.Error -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(state.message, color = Color.White)
-                    }
-                    is SearchUiState.SuccessTrips -> {
-                        val tripUiModels = state.trips.map { it.toUiModel() }
-                        TripGrid(
-                            trips = tripUiModels,
-                            currentThemeId = currentThemeId ?: "theme_light",
+                        IconButton(
                             onClick = {
-                                viewModel.onTripSelected(it.trip.id)
-                                navController.navigate(Screen.TripDetails.route)
-                            }
+                                viewModel.updateFilters(
+                                    filters.copy(isFavorite = if (filters.isFavorite == true) null else true)
+                                )
+                            },
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Image(
+                                painter = painterResource(favoritesIconRes),
+                                contentDescription = "Favorites",
+                                modifier = Modifier.size(60.dp)
+                            )
+                        }
+
+                        ThemedChip(
+                            text = "Date Range",
+                            selected = showDateRange,
+                            onClick = { showDateRange = !showDateRange },
+                            background = searchFieldColor
                         )
                     }
-                    is SearchUiState.SuccessEntries -> {
-                        EntryList(
-                            entries = state.entries,
-                            trips = state.trips,
-                            onClick = { tripId ->
-                                viewModel.onTripSelected(tripId)
-                                navController.navigate(Screen.TripDetails.route)
-                            },
-                            onSortChange = { sortOption -> viewModel.applySort(sortOption) },
-                            currentSort = currentSort,
-                            themeRepository = themeRepository
+
+                    if (showEntryType) {
+                        Spacer(Modifier.height(8.dp))
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            EntryType.values().forEach { type ->
+                                ThemedChip(
+                                    text = type.name,
+                                    selected = filters.entryType == type,
+                                    onClick = { viewModel.updateFilters(filters.copy(entryType = type)) },
+                                    background = inputBackgroundColor
+                                )
+                            }
+                        }
+                    }
+
+                    if (showTripCategory) {
+                        Spacer(Modifier.height(8.dp))
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            TripCategory.values().forEach { cat ->
+                                ThemedChip(
+                                    text = cat.name,
+                                    selected = filters.category == cat,
+                                    onClick = { viewModel.updateFilters(filters.copy(category = cat)) },
+                                    background = inputBackgroundColor
+                                )
+                            }
+                        }
+                    }
+
+                    if (showDateRange) {
+                        Spacer(Modifier.height(8.dp))
+
+                        val startDatePickerState = rememberDatePickerState(
+                            initialSelectedDateMillis = filters.dateRange?.start?.toEpochMillis()
                         )
+                        val endDatePickerState = rememberDatePickerState(
+                            initialSelectedDateMillis = filters.dateRange?.endInclusive?.toEpochMillis()
+                        )
+
+                        var showStartPicker by remember { mutableStateOf(false) }
+                        var showEndPicker by remember { mutableStateOf(false) }
+
+                        if (showStartPicker) {
+                            DatePickerDialog(
+                                onDismissRequest = { showStartPicker = false },
+                                confirmButton = {
+                                    TextButton(
+                                        onClick = {
+                                            startDatePickerState.selectedDateMillis?.let {
+                                                val picked = Instant.fromEpochMilliseconds(it)
+                                                    .toLocalDateTime(TimeZone.currentSystemDefault()).date
+                                                val currentEnd = filters.dateRange?.endInclusive
+                                                viewModel.updateFilters(
+                                                    filters.copy(
+                                                        dateRange = picked..(currentEnd ?: picked)
+                                                    )
+                                                )
+                                            }
+                                            showStartPicker = false
+                                        },
+                                        colors = ButtonDefaults.textButtonColors(
+                                            contentColor = Color.Black
+                                        )
+                                    ) {
+                                        Text("OK")
+                                    }
+                                },
+                                dismissButton = {
+                                    TextButton(
+                                        onClick = { showStartPicker = false },
+                                        colors = ButtonDefaults.textButtonColors(
+                                            contentColor = Color.Black
+                                        )
+                                    ) {
+                                        Text("Cancel")
+                                    }
+                                }
+                            ) {
+                                DatePicker(state = startDatePickerState)
+                            }
+                        }
+
+                        if (showEndPicker) {
+                            DatePickerDialog(
+                                onDismissRequest = { showEndPicker = false },
+                                confirmButton = {
+                                    TextButton(
+                                        onClick = {
+                                            endDatePickerState.selectedDateMillis?.let {
+                                                val picked = Instant.fromEpochMilliseconds(it)
+                                                    .toLocalDateTime(TimeZone.currentSystemDefault()).date
+                                                val currentStart =
+                                                    filters.dateRange?.start ?: picked
+                                                viewModel.updateFilters(
+                                                    filters.copy(dateRange = currentStart..picked)
+                                                )
+                                            }
+                                            showEndPicker = false
+                                        },
+                                        colors = ButtonDefaults.textButtonColors(
+                                            contentColor = Color.Black
+                                        )
+                                    ) {
+                                        Text("OK")
+                                    }
+                                },
+                                dismissButton = {
+                                    TextButton(
+                                        onClick = { showEndPicker = false },
+                                        colors = ButtonDefaults.textButtonColors(
+                                            contentColor = Color.Black
+                                        )
+                                    ) {
+                                        Text("Cancel")
+                                    }
+                                }
+                            ) {
+                                DatePicker(state = endDatePickerState)
+                            }
+                        }
+
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedButton(
+                                onClick = { showStartPicker = true },
+                                colors = ButtonDefaults.outlinedButtonColors(containerColor = inputBackgroundColor)
+                            ) {
+                                Text(
+                                    filters.dateRange?.start?.toString() ?: "Start Date",
+                                    color = Color.White
+                                )
+                            }
+
+                            OutlinedButton(
+                                onClick = { showEndPicker = true },
+                                colors = ButtonDefaults.outlinedButtonColors(containerColor = inputBackgroundColor)
+                            ) {
+                                Text(
+                                    filters.dateRange?.endInclusive?.toString() ?: "End Date",
+                                    color = Color.White
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(Modifier.height(8.dp))
+
+                    if (recent.isNotEmpty() && filters.query.isNullOrBlank()) {
+                        Text("Recent:", Modifier.padding(bottom = 4.dp), color = Color.White)
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            items(recent.take(5)) { q ->
+                                ThemedAssistChip(
+                                    text = q,
+                                    onClick = { viewModel.updateFilters(filters.copy(query = q)) },
+                                    background = searchFieldColor
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(Modifier.height(8.dp))
+
+                    when (val state = uiState) {
+                        is SearchUiState.Idle -> Box(
+                            Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("Start typing to search…", color = Color.White)
+                        }
+
+                        is SearchUiState.Loading -> Box(
+                            Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+
+                        is SearchUiState.Empty -> SearchEmptyState(currentThemeId ?: "theme_light")
+                        is SearchUiState.Error -> Box(
+                            Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(state.message, color = Color.White)
+                        }
+
+                        is SearchUiState.SuccessTrips -> {
+                            val tripUiModels = state.trips.map { it.toUiModel() }
+                            TripGrid(
+                                trips = tripUiModels,
+                                currentThemeId = currentThemeId ?: "theme_light",
+                                onClick = {
+                                    viewModel.onTripSelected(it.trip.id)
+                                    navController.navigate(Screen.TripDetails.route)
+                                }
+                            )
+                        }
+
+                        is SearchUiState.SuccessEntries -> {
+                            EntryList(
+                                entries = state.entries,
+                                trips = state.trips,
+                                onClick = { tripId ->
+                                    viewModel.onTripSelected(tripId)
+                                    navController.navigate(Screen.TripDetails.route)
+                                },
+                                onSortChange = { sortOption -> viewModel.applySort(sortOption) },
+                                currentSort = currentSort,
+                                themeRepository = themeRepository
+                            )
+                        }
                     }
                 }
             }
